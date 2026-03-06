@@ -44,6 +44,7 @@ from .constants import (
     SANDBOX_API_GROUP, SANDBOX_API_VERSION, SANDBOX_PLURAL_NAME,
     POD_NAME_ANNOTATION,
 )
+from .metrics import DISCOVERY_LATENCY_MS
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -335,17 +336,28 @@ class SandboxClient:
         self._wait_for_sandbox_ready()
 
         # STRATEGY SELECTION
-        if self.base_url:
-            # Case 1: API URL provided manually (DNS / Internal) -> Do nothing, just use it.
-            logging.info(f"Using configured API URL: {self.base_url}")
+        start_time = time.time()
+        try:
+            if self.base_url:
+                # Case 1: API URL provided manually (DNS / Internal) -> Do nothing, just use it.
+                logging.info(f"Using configured API URL: {self.base_url}")
+                # We do not record discovery latency for pre-configured URL
+            else:
+                if self.gateway_name:
+                    # Case 2: Gateway Name provided -> Production Mode (Discovery)
+                    self._wait_for_gateway_ip()
+                else:
+                    # Case 3: No Gateway, No URL -> Developer Mode (Port Forward to Router)
+                    self._start_and_wait_for_port_forward()
 
-        elif self.gateway_name:
-            # Case 2: Gateway Name provided -> Production Mode (Discovery)
-            self._wait_for_gateway_ip()
+                latency_ms = (time.time() - start_time) * 1000
+                DISCOVERY_LATENCY_MS.labels(status="success").observe(latency_ms)
 
-        else:
-            # Case 3: No Gateway, No URL -> Developer Mode (Port Forward to Router)
-            self._start_and_wait_for_port_forward()
+        except Exception as e:
+            if not self.base_url:
+                latency_ms = (time.time() - start_time) * 1000
+                DISCOVERY_LATENCY_MS.labels(status="failure").observe(latency_ms)
+            raise e
 
         return self
 
