@@ -337,8 +337,9 @@ class SandboxClient:
 
         # STRATEGY SELECTION
         start_time = time.time()
+        is_preconfigured = bool(self.base_url)
         try:
-            if self.base_url:
+            if is_preconfigured:
                 # Case 1: API URL provided manually (DNS / Internal) -> Do nothing, just use it.
                 logging.info(f"Using configured API URL: {self.base_url}")
                 # We do not record discovery latency for pre-configured URL
@@ -353,11 +354,11 @@ class SandboxClient:
                 latency_ms = (time.time() - start_time) * 1000
                 DISCOVERY_LATENCY_MS.labels(status="success").observe(latency_ms)
 
-        except Exception as e:
-            if not self.base_url:
+        except Exception:
+            if not is_preconfigured:
                 latency_ms = (time.time() - start_time) * 1000
                 DISCOVERY_LATENCY_MS.labels(status="failure").observe(latency_ms)
-            raise e
+            raise
 
         return self
 

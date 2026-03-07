@@ -26,109 +26,119 @@ def mock_wait_ready():
     with patch.object(SandboxClient, '_wait_for_sandbox_ready') as mock:
         yield mock
 
-def test_discovery_latency_success_dev_mode(mock_k8s_config, mock_custom_objects_api, mock_create_claim, mock_wait_ready):
+@pytest.mark.parametrize(
+    "test_name, setup_kwargs, expected_url, should_fail, expect_success_metric, expect_failure_metric",
+    [
+        (
+            "dev_mode_success",
+            {"template_name": "test-template"},
+            "http://127.0.0.1:12345",
+            False,
+            True,
+            False
+        ),
+        (
+            "dev_mode_failure",
+            {"template_name": "test-template"},
+            None,
+            True,
+            False,
+            True
+        ),
+        (
+            "gateway_mode_success",
+            {"template_name": "test-template", "gateway_name": "test-gw"},
+            "http://10.0.0.1",
+            False,
+            True,
+            False
+        ),
+        (
+            "base_url_mode_no_metric",
+            {"template_name": "test-template", "api_url": "http://custom-url"},
+            "http://custom-url",
+            False,
+            False,
+            False
+        )
+    ]
+)
+def test_discovery_latency_modes(
+    test_name, setup_kwargs, expected_url, should_fail,
+    expect_success_metric, expect_failure_metric,
+    mock_k8s_config, mock_custom_objects_api, mock_create_claim, mock_wait_ready
+):
     with patch('k8s_agent_sandbox.sandbox_client.subprocess.Popen') as mock_popen, \
          patch('k8s_agent_sandbox.sandbox_client.socket.socket') as mock_socket, \
-         patch('k8s_agent_sandbox.sandbox_client.socket.create_connection') as mock_create_connection, \
-         patch('k8s_agent_sandbox.sandbox_client.time.sleep'):
+         patch('k8s_agent_sandbox.sandbox_client.socket.create_connection'), \
+         patch('k8s_agent_sandbox.sandbox_client.time.sleep'), \
+         patch('k8s_agent_sandbox.sandbox_client.watch.Watch') as mock_watch:
 
-        # Setup mock port forward
-        mock_process = MagicMock()
-        mock_process.poll.return_value = None
-        mock_popen.return_value = mock_process
+        # Setup mocks based on the test case
+        if "dev_mode" in test_name:
+            mock_process = MagicMock()
+            if should_fail:
+                mock_process.poll.return_value = 1
+                mock_process.communicate.return_value = (b"", b"Crash")
+            else:
+                mock_process.poll.return_value = None
+            mock_popen.return_value = mock_process
 
-        # Setup socket mock to return a free port
-        mock_sock_instance = MagicMock()
-        mock_sock_instance.getsockname.return_value = ('0.0.0.0', 12345)
-        mock_socket.return_value.__enter__.return_value = mock_sock_instance
+            mock_sock_instance = MagicMock()
+            mock_sock_instance.getsockname.return_value = ('0.0.0.0', 12345)
+            mock_socket.return_value.__enter__.return_value = mock_sock_instance
 
-        # Get baseline metric value before test
-        before_count = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
-
-        # Initialize client in dev mode (no base_url, no gateway_name)
-        client = SandboxClient(template_name="test-template")
-
-        with client:
-            # Client has successfully entered the context
-            assert client.base_url == "http://127.0.0.1:12345"
-
-        # Verify metric was incremented
-        after_count = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
-        assert after_count > before_count
-
-def test_discovery_latency_failure_dev_mode(mock_k8s_config, mock_custom_objects_api, mock_create_claim, mock_wait_ready):
-    with patch('k8s_agent_sandbox.sandbox_client.subprocess.Popen') as mock_popen, \
-         patch('k8s_agent_sandbox.sandbox_client.socket.socket') as mock_socket:
-
-        # Setup mock port forward that fails
-        mock_process = MagicMock()
-        mock_process.poll.return_value = 1 # Process died
-        mock_process.communicate.return_value = (b"", b"Crash")
-        mock_popen.return_value = mock_process
-
-        # Get baseline metric value before test
-        before_count = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
-
-        # Initialize client in dev mode
-        client = SandboxClient(template_name="test-template")
-
-        with pytest.raises(RuntimeError):
-            with client:
-                pass
-
-        # Verify failure metric was incremented
-        after_count = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
-        assert after_count > before_count
-
-def test_discovery_latency_success_gateway_mode(mock_k8s_config, mock_custom_objects_api, mock_create_claim, mock_wait_ready):
-    with patch('k8s_agent_sandbox.sandbox_client.watch.Watch') as mock_watch:
-        # Setup watch to return gateway with IP
-        mock_w_instance = MagicMock()
-        mock_w_instance.stream.return_value = [{
-            "type": "ADDED",
-            "object": {
-                "status": {
-                    "addresses": [{"value": "10.0.0.1"}]
+        elif "gateway_mode" in test_name:
+            mock_w_instance = MagicMock()
+            mock_w_instance.stream.return_value = [{
+                "type": "ADDED",
+                "object": {
+                    "status": {
+                        "addresses": [{"value": "10.0.0.1"}]
+                    }
                 }
-            }
-        }]
-        mock_watch.return_value = mock_w_instance
+            }]
+            mock_watch.return_value = mock_w_instance
 
-        before_count = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
+        # Capture metrics before
+        try:
+            before_success = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
+        except:
+            before_success = 0.0
 
-        client = SandboxClient(template_name="test-template", gateway_name="test-gw")
+        try:
+            before_failure = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
+        except:
+            before_failure = 0.0
 
-        with client:
-            assert client.base_url == "http://10.0.0.1"
+        client = SandboxClient(**setup_kwargs)
 
-        after_count = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
-        assert after_count > before_count
+        if should_fail:
+            with pytest.raises(RuntimeError):
+                with client:
+                    pass
+        else:
+            with client:
+                assert client.base_url == expected_url
 
-def test_discovery_latency_no_metric_for_base_url(mock_k8s_config, mock_custom_objects_api, mock_create_claim, mock_wait_ready):
-    try:
-        before_success = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
-    except:
-        before_success = 0.0
+        # Capture metrics after
+        try:
+            after_success = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
+        except:
+            after_success = 0.0
 
-    try:
-        before_failure = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
-    except:
-        before_failure = 0.0
+        try:
+            after_failure = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
+        except:
+            after_failure = 0.0
 
-    client = SandboxClient(template_name="test-template", api_url="http://custom-url")
+        # Assert metrics changes
+        if expect_success_metric:
+            assert after_success > before_success
+        else:
+            assert after_success == before_success
 
-    with client:
-        assert client.base_url == "http://custom-url"
-
-    try:
-        after_success = DISCOVERY_LATENCY_MS.labels(status="success")._sum.get()
-    except:
-        after_success = 0.0
-
-    try:
-        after_failure = DISCOVERY_LATENCY_MS.labels(status="failure")._sum.get()
-    except:
-        after_failure = 0.0
-
-    assert after_success == before_success
-    assert after_failure == before_failure
+        if expect_failure_metric:
+            assert after_failure > before_failure
+        else:
+            assert after_failure == before_failure
