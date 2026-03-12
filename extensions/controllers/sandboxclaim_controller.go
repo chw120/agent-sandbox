@@ -441,6 +441,12 @@ func (r *SandboxClaimReconciler) createSandbox(ctx context.Context, claim *exten
 		sandbox.Annotations[asmetrics.TraceContextAnnotation] = tc
 	}
 
+	// Track the sandbox template ref to be used by metrics collector
+	if sandbox.Annotations == nil {
+		sandbox.Annotations = make(map[string]string)
+	}
+	sandbox.Annotations[sandboxcontrollers.SandboxTemplateRefAnnotation] = template.Name
+
 	template.Spec.PodTemplate.DeepCopyInto(&sandbox.Spec.PodTemplate)
 	// TODO: this is a workaround, remove replica assignment related issue #202
 	replicas := int32(1)
