@@ -228,14 +228,11 @@ func (cl *ClusterClient) PollUntilObjectMatches(obj client.Object, p ...predicat
 	cl.Helper()
 	ctx := cl.Context()
 
-	timeout := DefaultTimeout
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < timeout {
-			timeout = remaining
-		}
+	var cancel context.CancelFunc
+	if _, ok := ctx.Deadline(); !ok {
+		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
+		defer cancel()
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 	start := time.Now()
 	nn := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 	for {
@@ -262,21 +259,17 @@ func (cl *ClusterClient) PollUntilObjectMatches(obj client.Object, p ...predicat
 // the provided predicates.
 // It will wait for the object to be created, but if the object is deleted,
 // it will return an error.
-// The timeout is capped at DefaultTimeout (1 minute). A shorter timeout can
-// be specified via the context.
+// A timeout can be specified via the context, or it will default to 1 minute.
 // It uses a watch for more precise timing than polling.
 // It uses a shared WatchSet to avoid per-call watch setup latency.
 func (cl *ClusterClient) WaitForObject(ctx context.Context, obj client.Object, p ...predicates.ObjectPredicate) error {
 	cl.Helper()
 
-	timeout := DefaultTimeout
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining < timeout {
-			timeout = remaining
-		}
+	var cancel context.CancelFunc
+	if _, ok := ctx.Deadline(); !ok {
+		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
+		defer cancel()
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 	start := time.Now()
 	nn := types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}
 
@@ -298,7 +291,7 @@ func (cl *ClusterClient) WaitForObject(ctx context.Context, obj client.Object, p
 	watchFilter := WatchFilter{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 
 	var lastNotMatching []predicates.ObjectPredicate
-	done, err := Watch(ctx, cl, gvr, watchFilter, func(event watch.Event, obj *unstructured.Unstructured) (bool, error) {
+	done, err := Watch(cl, gvr, watchFilter, func(event watch.Event, obj *unstructured.Unstructured) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, fmt.Errorf("object was deleted while waiting for predicates to be satisfied")
 		}
@@ -330,9 +323,11 @@ func (cl *ClusterClient) WaitForObject(ctx context.Context, obj client.Object, p
 // Watch calls a callback whenever the specified object changes,
 // using a shared WatchSet to avoid per-call watch setup latency.
 // Callback is called for each event, and if the callback returns true or an error, the watch will stop and the value will be returned.
-func (cl *ClusterClient) Watch(ctx context.Context, gvr schema.GroupVersionResource, filter WatchFilter, callback func(event watch.Event) (bool, error)) (bool, error) {
+func (cl *ClusterClient) Watch(gvr schema.GroupVersionResource, filter WatchFilter, callback func(event watch.Event) (bool, error)) (bool, error) {
+	ctx := cl.Context()
+
 	// Subscribe using the watchSet, ideally reusing an existing watch
-	sub := cl.watchSet.Subscribe(gvr, filter)
+	sub := cl.watchSet.Subscribe(ctx, gvr, filter)
 	defer sub.Close()
 
 	for {
@@ -359,8 +354,9 @@ func (cl *ClusterClient) Watch(ctx context.Context, gvr schema.GroupVersionResou
 // Watch calls a callback whenever the specified object changes,
 // using a shared WatchSet to avoid per-call watch setup latency.
 // It is a wrapper around ClusterClient Watch that converts to a strongly-typed object in the callback.
-func Watch[T client.Object](ctx context.Context, cl *ClusterClient, gvr schema.GroupVersionResource, watchFilter WatchFilter, callback func(event watch.Event, obj T) (bool, error)) (bool, error) {
-	return cl.Watch(ctx, gvr, watchFilter, func(event watch.Event) (bool, error) {
+func Watch[T client.Object](cl *ClusterClient, gvr schema.GroupVersionResource, watchFilter WatchFilter, callback func(event watch.Event, obj T) (bool, error)) (bool, error) {
+	// Subscribe using the watchSet, ideally reusing an existing watch
+	return cl.Watch(gvr, watchFilter, func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Added, watch.Modified, watch.Deleted:
 		// ok
@@ -393,10 +389,10 @@ func Watch[T client.Object](ctx context.Context, cl *ClusterClient, gvr schema.G
 }
 
 // MustWatch is a wrapper around WatchObject that fails the test on error.
-func MustWatch[T client.Object](ctx context.Context, cl *ClusterClient, gvr schema.GroupVersionResource, watchFilter WatchFilter, callback func(event watch.Event, obj T) (bool, error)) bool {
+func MustWatch[T client.Object](cl *ClusterClient, gvr schema.GroupVersionResource, watchFilter WatchFilter, callback func(event watch.Event, obj T) (bool, error)) bool {
 	cl.Helper()
 
-	done, err := Watch(ctx, cl, gvr, watchFilter, callback)
+	done, err := Watch(cl, gvr, watchFilter, callback)
 	if err != nil {
 		// Only fail the test if this isn't the normal "context cancelled" shutdown error.
 		if !errors.Is(err, context.Canceled) {
