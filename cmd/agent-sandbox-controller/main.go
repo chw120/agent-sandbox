@@ -36,6 +36,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/agent-sandbox/api/v1alpha1"
 	sandboxv1alpha1 "sigs.k8s.io/agent-sandbox/api/v1alpha1"
 	"sigs.k8s.io/agent-sandbox/controllers"
 	extensionsv1alpha1 "sigs.k8s.io/agent-sandbox/extensions/api/v1alpha1"
@@ -306,6 +307,17 @@ func main() {
 		setupLog.Error(err, "unable to set up field indexer for Sandboxes")
 		os.Exit(1)
 	}
+
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &v1alpha1.Sandbox{}, "metadata.label.claim-uid", func(rawObj client.Object) []string {
+    sb := rawObj.(*v1alpha1.Sandbox)
+    if uid := sb.Labels[extensionsv1alpha1.SandboxIDLabel]; uid != "" {
+        return []string{uid}
+    }
+    return nil
+}); err != nil {
+		setupLog.Error(err, "unable to set up field indexer for Sandbox claim UID")
+		os.Exit(1)
+}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {

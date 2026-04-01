@@ -419,6 +419,11 @@ func (r *SandboxClaimReconciler) createSandbox(ctx context.Context, claim *exten
 	sandbox.Spec.PodTemplate.ObjectMeta.Labels[extensionsv1alpha1.SandboxIDLabel] = string(claim.UID)
 	sandbox.Spec.PodTemplate.ObjectMeta.Labels[sandboxTemplateRefHash] = sandboxcontrollers.NameHash(template.Name)
 
+	if sandbox.Labels == nil {
+		sandbox.Labels = make(map[string]string)
+	}
+	sandbox.Labels[extensionsv1alpha1.SandboxIDLabel] = string(claim.UID)
+
 	if err := controllerutil.SetControllerReference(claim, sandbox, r.Scheme); err != nil {
 		err = fmt.Errorf("failed to set controller reference for sandbox: %w", err)
 		logger.Error(err, "Error creating sandbox for claim", "claimName", claim.Name)
@@ -444,6 +449,18 @@ func (r *SandboxClaimReconciler) createSandbox(ctx context.Context, claim *exten
 
 func (r *SandboxClaimReconciler) getOrCreateSandbox(ctx context.Context, claim *extensionsv1alpha1.SandboxClaim, _ *extensionsv1alpha1.SandboxTemplate) (*v1alpha1.Sandbox, error) {
 	logger := log.FromContext(ctx)
+
+	// Check if Sandbox already exists and is controlled by this claim
+	var sandboxList v1alpha1.SandboxList
+	if err := r.List(ctx, &sandboxList, client.InNamespace(claim.Namespace),
+		client.MatchingFields{"metadata.label.claim-uid": string(claim.UID)}); err != nil {
+		return nil, fmt.Errorf("failed to list sandboxes for claim %q: %w", claim.Name, err)
+	}
+	if len(sandboxList.Items) > 0 {
+		sandbox := &sandboxList.Items[0]
+		r.inFlightClaims.Delete(claim.UID)
+		return sandbox, nil
+	}
 
 	// Does this claim already have an async bind running?
 	if sandboxName, ok := r.inFlightClaims.Load(claim.UID); ok {
@@ -593,7 +610,6 @@ func (r *SandboxClaimReconciler) executeAsyncBinding(ctx context.Context, claim 
 				poolName = "none"
 			}
 			asmetrics.RecordSandboxClaimCreation(owningClaim.Namespace, owningClaim.Spec.TemplateRef.Name, asmetrics.LaunchTypeWarm, poolName, "ready")
-			r.inFlightClaims.Delete(owningClaim.UID)
 		}
 	}(sandboxID, claim.DeepCopy())
 
