@@ -410,6 +410,33 @@ func (r *SandboxReconciler) reconcilePod(ctx context.Context, sandbox *sandboxv1
 		return nil, nil
 	}
 
+	ensurePodNameAnnotation := func(podName string) error {
+		annotatedPodName := ""
+		if sandbox.Annotations != nil {
+			annotatedPodName = sandbox.Annotations[sandboxv1alpha1.SandboxPodNameAnnotation]
+		}
+
+		if annotatedPodName == podName {
+			return nil
+		}
+
+		if annotatedPodName != "" {
+			log.Info("Skipping pod name annotation update because sandbox already tracks a different pod", "trackedPodName", annotatedPodName, "podName", podName)
+			return nil
+		}
+
+		patch := client.MergeFrom(sandbox.DeepCopy())
+		if sandbox.Annotations == nil {
+			sandbox.Annotations = make(map[string]string)
+		}
+		sandbox.Annotations[sandboxv1alpha1.SandboxPodNameAnnotation] = podName
+		if err := r.Patch(ctx, sandbox, patch); err != nil {
+			return fmt.Errorf("failed to set pod name annotation: %w", err)
+		}
+
+		return nil
+	}
+
 	// 2. PATH: Existing Pod found (e.g., adopted from WarmPool or already exists)
 	if pod != nil {
 		log.Info("Found Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
@@ -480,6 +507,10 @@ func (r *SandboxReconciler) reconcilePod(ctx context.Context, sandbox *sandboxv1
 			}
 		}
 
+		if err := ensurePodNameAnnotation(pod.Name); err != nil {
+			return nil, err
+		}
+
 		// TODO - Do we enfore (change) spec if a pod exists ?
 		// r.Patch(ctx, pod, client.Apply, client.ForceOwnership, client.FieldOwner("sandbox-controller"))
 		return pod, nil
@@ -538,6 +569,10 @@ func (r *SandboxReconciler) reconcilePod(ctx context.Context, sandbox *sandboxv1
 	}
 	if err := r.Create(ctx, pod, client.FieldOwner(sandboxControllerFieldOwner)); err != nil {
 		log.Error(err, "Failed to create", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
+		return nil, err
+	}
+
+	if err := ensurePodNameAnnotation(pod.Name); err != nil {
 		return nil, err
 	}
 
