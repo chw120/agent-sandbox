@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
@@ -223,6 +224,20 @@ func (r *SandboxClaimReconciler) reconcileActive(ctx context.Context, claim *ext
 				logger.Error(npErr, "network policy reconcile failed after adoption (non-fatal)", "claim", claim.Name)
 			}
 		}
+
+		// Reconcile AdditionalPodMetadata updates
+		sandboxUpdated := false
+		if !reflect.DeepEqual(sandbox.Spec.AdditionalPodMetadata, claim.Spec.AdditionalPodMetadata) {
+			logger.Info("Updating AdditionalPodMetadata on Sandbox to match Claim", "claim", claim.Name)
+			claim.Spec.AdditionalPodMetadata.DeepCopyInto(&sandbox.Spec.AdditionalPodMetadata)
+			sandboxUpdated = true
+		}
+		if sandboxUpdated {
+			if updateErr := r.Update(ctx, sandbox); updateErr != nil {
+				return nil, fmt.Errorf("failed to update sandbox metadata: %w", updateErr)
+			}
+		}
+
 		return sandbox, nil
 	}
 
@@ -447,6 +462,9 @@ func (r *SandboxClaimReconciler) adoptSandboxFromCandidates(ctx context.Context,
 		}
 		adopted.Spec.PodTemplate.ObjectMeta.Labels[extensionsv1alpha1.SandboxIDLabel] = string(claim.UID)
 
+		// Inject AdditionalPodMetadata from Claim to adopted Sandbox
+		claim.Spec.AdditionalPodMetadata.DeepCopyInto(&adopted.Spec.AdditionalPodMetadata)
+
 		// Update uses optimistic concurrency (resourceVersion) so concurrent
 		// claims racing to adopt the same sandbox will conflict and retry.
 		if err := r.Update(ctx, adopted); err != nil {
@@ -502,6 +520,9 @@ func (r *SandboxClaimReconciler) createSandbox(ctx context.Context, claim *exten
 			Name:      claim.Name,
 		},
 	}
+
+	// Propagate AdditionalPodMetadata from Claim to Sandbox
+	claim.Spec.AdditionalPodMetadata.DeepCopyInto(&sandbox.Spec.AdditionalPodMetadata)
 
 	// Determine if we are in "Secure By Default" mode
 	management := template.Spec.NetworkPolicyManagement

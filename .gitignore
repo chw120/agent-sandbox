@@ -16,3 +16,5 @@ clients/python/agentic-sandbox-client/VERSION
 tmp/
 temp/
 .tmp/
+test/e2e/artifacts
+test/e2e/extensions/artifacts

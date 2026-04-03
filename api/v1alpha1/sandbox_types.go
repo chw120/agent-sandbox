@@ -124,6 +124,10 @@ type SandboxSpec struct {
 	// +kubebuilder:default=1
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
+
+	// additionalPodMetadata defines the additional labels and annotations to be applied to the sandbox pod.
+	// +optional
+	AdditionalPodMetadata PodMetadata `json:"additionalPodMetadata,omitempty"`
 }
 
 // ShutdownPolicy describes the policy for deleting the Sandbox when it expires.

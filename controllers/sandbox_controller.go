@@ -437,6 +437,35 @@ func (r *SandboxReconciler) reconcilePod(ctx context.Context, sandbox *sandboxv1
 			}
 		}
 
+		// Verify no overrides between Template and AdditionalPodMetadata
+		if err := verifyNoMetadataOverrides(&sandbox.Spec.PodTemplate.ObjectMeta, &sandbox.Spec.AdditionalPodMetadata); err != nil {
+			return nil, fmt.Errorf("metadata override conflict: %w", err)
+		}
+
+		// Propagate AdditionalPodMetadata to the existing pod
+		if len(sandbox.Spec.AdditionalPodMetadata.Labels) > 0 {
+			if pod.Labels == nil {
+				pod.Labels = make(map[string]string)
+			}
+			for k, v := range sandbox.Spec.AdditionalPodMetadata.Labels {
+				if pod.Labels[k] != v {
+					pod.Labels[k] = v
+					changed = true
+				}
+			}
+		}
+		if len(sandbox.Spec.AdditionalPodMetadata.Annotations) > 0 {
+			if pod.Annotations == nil {
+				pod.Annotations = make(map[string]string)
+			}
+			for k, v := range sandbox.Spec.AdditionalPodMetadata.Annotations {
+				if pod.Annotations[k] != v {
+					pod.Annotations[k] = v
+					changed = true
+				}
+			}
+		}
+
 		// Set controller reference if the pod is not controlled by anything.
 		if controllerRef := metav1.GetControllerOf(pod); controllerRef == nil {
 			if err := ctrl.SetControllerReference(sandbox, pod, r.Scheme); err != nil {
@@ -466,6 +495,18 @@ func (r *SandboxReconciler) reconcilePod(ctx context.Context, sandbox *sandboxv1
 	}
 	annotations := map[string]string{}
 	for k, v := range sandbox.Spec.PodTemplate.ObjectMeta.Annotations {
+		annotations[k] = v
+	}
+
+	// Verify no overrides between Template and AdditionalPodMetadata
+	if err := verifyNoMetadataOverrides(&sandbox.Spec.PodTemplate.ObjectMeta, &sandbox.Spec.AdditionalPodMetadata); err != nil {
+		return nil, fmt.Errorf("metadata override conflict: %w", err)
+	}
+
+	for k, v := range sandbox.Spec.AdditionalPodMetadata.Labels {
+		labels[k] = v
+	}
+	for k, v := range sandbox.Spec.AdditionalPodMetadata.Annotations {
 		annotations[k] = v
 	}
 
@@ -631,6 +672,28 @@ func checkSandboxExpiry(sandbox *sandboxv1alpha1.Sandbox) (bool, time.Duration) 
 func sandboxMarkedExpired(sandbox *sandboxv1alpha1.Sandbox) bool {
 	cond := meta.FindStatusCondition(sandbox.Status.Conditions, string(sandboxv1alpha1.SandboxConditionReady))
 	return cond != nil && cond.Reason == sandboxv1alpha1.SandboxReasonExpired
+}
+
+// verifyNoMetadataOverrides checks if there are conflicting keys with different values
+// between the base template metadata and the additional pod metadata.
+func verifyNoMetadataOverrides(templateMeta *sandboxv1alpha1.PodMetadata, additionalMeta *sandboxv1alpha1.PodMetadata) error {
+	if templateMeta == nil || additionalMeta == nil {
+		return nil
+	}
+
+	for k, addVal := range additionalMeta.Labels {
+		if tmplVal, exists := templateMeta.Labels[k]; exists && tmplVal != addVal {
+			return fmt.Errorf("label override not allowed: key '%s' has value '%s' in template but '%s' in claim", k, tmplVal, addVal)
+		}
+	}
+
+	for k, addVal := range additionalMeta.Annotations {
+		if tmplVal, exists := templateMeta.Annotations[k]; exists && tmplVal != addVal {
+			return fmt.Errorf("annotation override not allowed: key '%s' has value '%s' in template but '%s' in claim", k, tmplVal, addVal)
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

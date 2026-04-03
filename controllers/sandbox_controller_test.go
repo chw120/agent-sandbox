@@ -582,6 +582,14 @@ func TestReconcilePod(t *testing.T) {
 					},
 				},
 			},
+			AdditionalPodMetadata: sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{
+					"additional-label": "add-label-val",
+				},
+				Annotations: map[string]string{
+					"additional-annotation": "add-anno-val",
+				},
+			},
 		},
 	}
 	testCases := []struct {
@@ -619,6 +627,10 @@ func TestReconcilePod(t *testing.T) {
 					Labels: map[string]string{
 						"agents.x-k8s.io/sandbox-name-hash": nameHash,
 						"custom-label":                      "label-val",
+						"additional-label":                  "add-label-val",
+					},
+					Annotations: map[string]string{
+						"additional-annotation": "add-anno-val",
 					},
 					OwnerReferences: []metav1.OwnerReference{sandboxControllerRef(sandboxName)},
 				},
@@ -642,9 +654,11 @@ func TestReconcilePod(t *testing.T) {
 					Labels: map[string]string{
 						"agents.x-k8s.io/sandbox-name-hash": nameHash,
 						"custom-label":                      "label-val",
+						"additional-label":                  "add-label-val",
 					},
 					Annotations: map[string]string{
-						"custom-annotation": "anno-val",
+						"custom-annotation":     "anno-val",
+						"additional-annotation": "add-anno-val",
 					},
 					OwnerReferences: []metav1.OwnerReference{sandboxControllerRef(sandboxName)},
 				},
@@ -790,6 +804,10 @@ func TestReconcilePod(t *testing.T) {
 					Labels: map[string]string{
 						"agents.x-k8s.io/sandbox-name-hash": nameHash,
 						"custom-label":                      "label-val",
+						"additional-label":                  "add-label-val",
+					},
+					Annotations: map[string]string{
+						"additional-annotation": "add-anno-val",
 					},
 					// Should still have the original controller reference
 					OwnerReferences: []metav1.OwnerReference{
@@ -965,6 +983,71 @@ func TestSandboxExpiry(t *testing.T) {
 				require.Greater(t, requeueAfter, time.Duration(0))
 			} else {
 				require.Equal(t, time.Duration(0), requeueAfter)
+			}
+		})
+	}
+}
+
+func TestVerifyNoMetadataOverrides(t *testing.T) {
+	tests := []struct {
+		name           string
+		templateMeta   *sandboxv1alpha1.PodMetadata
+		additionalMeta *sandboxv1alpha1.PodMetadata
+		wantErr        bool
+	}{
+		{
+			name: "No conflict",
+			templateMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"app": "sandbox"},
+			},
+			additionalMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"user": "alice"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Conflict in labels",
+			templateMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"app": "sandbox"},
+			},
+			additionalMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"app": "different"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Conflict in annotations",
+			templateMeta: &sandboxv1alpha1.PodMetadata{
+				Annotations: map[string]string{"key": "value1"},
+			},
+			additionalMeta: &sandboxv1alpha1.PodMetadata{
+				Annotations: map[string]string{"key": "value2"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Same value in both",
+			templateMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"app": "sandbox"},
+			},
+			additionalMeta: &sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{"app": "sandbox"},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "Nil template",
+			templateMeta:   nil,
+			additionalMeta: &sandboxv1alpha1.PodMetadata{Labels: map[string]string{"app": "sandbox"}},
+			wantErr:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := verifyNoMetadataOverrides(tt.templateMeta, tt.additionalMeta)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("verifyNoMetadataOverrides() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

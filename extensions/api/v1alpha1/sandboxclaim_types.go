@@ -15,6 +15,7 @@
 package v1alpha1
 
 import (
+	sandboxv1alpha1 "sigs.k8s.io/agent-sandbox/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -112,6 +113,10 @@ type SandboxClaimSpec struct {
 	// +optional
 	// +kubebuilder:default=default
 	WarmPool *WarmPoolPolicy `json:"warmpool,omitempty"`
+
+	// additionalPodMetadata defines the additional labels and annotations to be applied to the sandbox pod.
+	// +optional
+	AdditionalPodMetadata sandboxv1alpha1.PodMetadata `json:"additionalPodMetadata,omitempty"`
 }
 
 // SandboxClaimStatus defines the observed state of Sandbox.

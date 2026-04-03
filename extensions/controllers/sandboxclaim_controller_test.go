@@ -160,6 +160,21 @@ func TestSandboxClaimReconcile(t *testing.T) {
 		Spec:       extensionsv1alpha1.SandboxClaimSpec{TemplateRef: extensionsv1alpha1.SandboxTemplateRef{Name: "automount-template"}},
 	}
 
+	claimWithMetadata := &extensionsv1alpha1.SandboxClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-claim-metadata", Namespace: "default", UID: "claim-uid-metadata"},
+		Spec: extensionsv1alpha1.SandboxClaimSpec{
+			TemplateRef: extensionsv1alpha1.SandboxTemplateRef{Name: "test-template"},
+			AdditionalPodMetadata: sandboxv1alpha1.PodMetadata{
+				Labels: map[string]string{
+					"custom-label-key": "custom-label-value",
+				},
+				Annotations: map[string]string{
+					"custom-annotation-key": "custom-annotation-value",
+				},
+			},
+		},
+	}
+
 	templateOptOut := &extensionsv1alpha1.SandboxTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-template-opt-out",
@@ -262,6 +277,23 @@ func TestSandboxClaimReconcile(t *testing.T) {
 				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionFalse, Reason: "SandboxNotReady", Message: "Sandbox is not ready",
 			},
 			validateSandbox: validateSandboxHasDefaultAutomountToken,
+		},
+		{
+			name:             "sandbox is created and metadata propagated",
+			claimToReconcile: claimWithMetadata,
+			existingObjects:  []client.Object{template},
+			expectSandbox:    true,
+			expectedCondition: metav1.Condition{
+				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionFalse, Reason: "SandboxNotReady", Message: "Sandbox is not ready",
+			},
+			validateSandbox: func(t *testing.T, sandbox *sandboxv1alpha1.Sandbox, _ *extensionsv1alpha1.SandboxTemplate) {
+				if sandbox.Spec.AdditionalPodMetadata.Labels["custom-label-key"] != "custom-label-value" {
+					t.Errorf("Expected AdditionalPodMetadata.Labels to be propagated")
+				}
+				if sandbox.Spec.AdditionalPodMetadata.Annotations["custom-annotation-key"] != "custom-annotation-value" {
+					t.Errorf("Expected AdditionalPodMetadata.Annotations to be propagated")
+				}
+			},
 		},
 		{
 			name:             "sandbox is created with automount token enabled",
