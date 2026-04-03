@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -228,6 +228,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 		Reason:  "SandboxReady",
 		Message: "Sandbox is ready",
 	}}
+	readySandbox.Status.PodIPs = []string{"10.244.0.6"}
 
 	// Validation Functions
 	validateSandboxHasDefaultAutomountToken := func(t *testing.T, sandbox *sandboxv1alpha1.Sandbox, template *extensionsv1alpha1.SandboxTemplate) {
@@ -266,6 +267,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 		expectSandbox     bool
 		expectError       bool
 		expectedCondition metav1.Condition
+		expectedPodIPs    []string
 		validateSandbox   func(t *testing.T, sandbox *sandboxv1alpha1.Sandbox, template *extensionsv1alpha1.SandboxTemplate)
 	}{
 		{
@@ -343,6 +345,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 			expectedCondition: metav1.Condition{
 				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionTrue, Reason: "SandboxReady", Message: "Sandbox is ready",
 			},
+			expectedPodIPs:  []string{"10.244.0.6"},
 			validateSandbox: validateSandboxHasDefaultAutomountToken,
 		},
 		{
@@ -353,6 +356,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 			expectedCondition: metav1.Condition{
 				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionTrue, Reason: "SandboxReady", Message: "Sandbox is ready",
 			},
+			expectedPodIPs:  []string{"10.244.0.6"},
 			validateSandbox: validateSandboxHasDefaultAutomountToken,
 		},
 		{
@@ -473,7 +477,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 			reconciler := &SandboxClaimReconciler{
 				Client:   client,
 				Scheme:   scheme,
-				Recorder: record.NewFakeRecorder(10),
+				Recorder: events.NewFakeRecorder(10),
 				Tracer:   asmetrics.NewNoOp(),
 			}
 
@@ -522,6 +526,11 @@ func TestSandboxClaimReconcile(t *testing.T) {
 					t.Errorf("expected condition reason %q, got %q", "ReconcilerError", condition.Reason)
 				}
 			} else {
+				if len(tc.expectedPodIPs) > 0 {
+					if diff := cmp.Diff(tc.expectedPodIPs, updatedClaim.Status.SandboxStatus.PodIPs); diff != "" {
+						t.Errorf("unexpected PodIPs:\n%s", diff)
+					}
+				}
 				if diff := cmp.Diff(tc.expectedCondition, condition, cmp.Comparer(ignoreTimestamp)); diff != "" {
 					t.Errorf("unexpected condition:\n%s", diff)
 				}
@@ -648,7 +657,7 @@ func TestSandboxClaimCleanupPolicy(t *testing.T) {
 			reconciler := &SandboxClaimReconciler{
 				Client:   client,
 				Scheme:   scheme,
-				Recorder: record.NewFakeRecorder(10),
+				Recorder: events.NewFakeRecorder(10),
 				Tracer:   asmetrics.NewNoOp(),
 			}
 
@@ -718,7 +727,7 @@ func TestSandboxProvisionEvent(t *testing.T) {
 		Spec:       extensionsv1alpha1.SandboxTemplateSpec{PodTemplate: sandboxv1alpha1.PodTemplate{}},
 	}
 
-	fakeRecorder := record.NewFakeRecorder(10)
+	fakeRecorder := events.NewFakeRecorder(10)
 	client := fake.NewClientBuilder().WithScheme(scheme).
 		WithObjects(claim, template).
 		WithStatusSubresource(claim).Build()
@@ -1011,7 +1020,7 @@ func TestSandboxClaimSandboxAdoption(t *testing.T) {
 			reconciler := &SandboxClaimReconciler{
 				Client:   fakeClient,
 				Scheme:   scheme,
-				Recorder: record.NewFakeRecorder(10),
+				Recorder: events.NewFakeRecorder(10),
 				Tracer:   asmetrics.NewNoOp(),
 			}
 
@@ -1142,7 +1151,7 @@ func TestSandboxClaimNoReAdoption(t *testing.T) {
 	reconciler := &SandboxClaimReconciler{
 		Client:   fakeClient,
 		Scheme:   scheme,
-		Recorder: record.NewFakeRecorder(10),
+		Recorder: events.NewFakeRecorder(10),
 		Tracer:   asmetrics.NewNoOp(),
 	}
 
@@ -1268,7 +1277,7 @@ func TestSandboxClaimCreationMetric(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   client,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1324,7 +1333,7 @@ func TestSandboxClaimCreationMetric(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   client,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1472,7 +1481,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   fakeClient,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1528,7 +1537,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   fakeClient,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1589,7 +1598,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   fakeClient,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1640,7 +1649,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   fakeClient,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 
@@ -1690,7 +1699,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		reconciler := &SandboxClaimReconciler{
 			Client:   fakeClient,
 			Scheme:   scheme,
-			Recorder: record.NewFakeRecorder(10),
+			Recorder: events.NewFakeRecorder(10),
 			Tracer:   asmetrics.NewNoOp(),
 		}
 

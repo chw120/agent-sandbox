@@ -15,8 +15,8 @@
 package v1alpha1
 
 import (
-	sandboxv1alpha1 "sigs.k8s.io/agent-sandbox/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sandboxv1alpha1 "sigs.k8s.io/agent-sandbox/api/v1alpha1"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -134,6 +134,11 @@ type SandboxStatus struct {
 	// name is the name of the Sandbox created from this claim
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// podIPs are the IP addresses of the underlying pod.
+	// A pod may have multiple IPs in dual-stack clusters.
+	// +optional
+	PodIPs []string `json:"podIPs,omitempty"`
 }
 
 // +genclient
