@@ -57,6 +57,7 @@ func getWarmPoolPolicy(claim *extensionsv1alpha1.SandboxClaim) extensionsv1alpha
 // SandboxClaimReconciler reconciles a SandboxClaim object
 type SandboxClaimReconciler struct {
 	client.Client
+	APIReader               client.Reader
 	Scheme                  *runtime.Scheme
 	Recorder                events.EventRecorder
 	Tracer                  asmetrics.Instrumenter
@@ -627,61 +628,63 @@ func (r *SandboxClaimReconciler) getOrCreateSandbox(ctx context.Context, claim *
 		return sandbox, nil
 	}
 
-	// Single List: ownership guard + adoption candidate scan.
-	// This queries the informer cache (not the API server), so it's fast.
-	logger.V(1).Info("Listing sandbox adoption candidates", "claim", claim.Name)
-	allSandboxes := &v1alpha1.SandboxList{}
-	if err := r.List(ctx, allSandboxes, client.InNamespace(claim.Namespace)); err != nil {
-		return nil, fmt.Errorf("failed to list sandboxes: %w", err)
-	}
-
 	policy := getWarmPoolPolicy(claim)
-	templateHash := sandboxcontrollers.NameHash(claim.Spec.TemplateRef.Name)
 	var adoptionCandidates []*v1alpha1.Sandbox
 
-	for i := range allSandboxes.Items {
-		sb := &allSandboxes.Items[i]
-		if !sb.DeletionTimestamp.IsZero() {
+	if policy == extensionsv1alpha1.WarmPoolPolicyNone {
+		logger.V(1).Info("No warm pool policy specified, skipping adoption")
+		return nil, nil
+	}
+
+	logger.V(1).Info("Listing sandbox candidates from cache", "claim", claim.Name)
+	templateHash := sandboxcontrollers.NameHash(claim.Spec.TemplateRef.Name)
+	candidates := &v1alpha1.SandboxList{}
+	if err := r.List(ctx, candidates, client.InNamespace(claim.Namespace), client.MatchingLabels{sandboxTemplateRefHash: templateHash}); err != nil {
+		return nil, fmt.Errorf("failed to list candidates: %w", err)
+	}
+
+	for i := range candidates.Items {
+		sb := &candidates.Items[i]
+
+		// Do a live Get on the candidate to check strong consistency state
+		latest := &v1alpha1.Sandbox{}
+		if err := r.APIReader.Get(ctx, client.ObjectKey{Namespace: sb.Namespace, Name: sb.Name}, latest); err != nil {
+			if k8errors.IsNotFound(err) {
+				continue // Deleted in the meantime
+			}
+			return nil, fmt.Errorf("failed to get live state of sandbox %q: %w", sb.Name, err)
+		}
+
+		// Ownership guard: if fresh state shows we already own it, return it!
+		if metav1.IsControlledBy(latest, claim) {
+			logger.Info("Found existing owned sandbox via live check", "sandbox", latest.Name, "claim", claim.Name)
+			return latest, nil
+		}
+
+		if !latest.DeletionTimestamp.IsZero() {
 			continue
 		}
 
-		// Ownership guard: if this claim already owns a sandbox, return it
-		if metav1.IsControlledBy(sb, claim) {
-			logger.Info("Found existing owned sandbox", "sandbox", sb.Name, "claim", claim.Name)
-			return sb, nil
-		}
-
-		// Skip warm pool adoption entirely if policy is "none"
-		if policy == extensionsv1alpha1.WarmPoolPolicyNone {
+		// Skip if already owned by someone else
+		controllerRef := metav1.GetControllerOf(latest)
+		if controllerRef != nil && controllerRef.Kind != "SandboxWarmPool" {
 			continue
 		}
 
 		// Collect adoption candidates from warm pool
-		if _, ok := sb.Labels[warmPoolSandboxLabel]; !ok {
-			continue
-		}
-		if sb.Labels[sandboxTemplateRefHash] != templateHash {
-			continue
-		}
-		controllerRef := metav1.GetControllerOf(sb)
-		if controllerRef != nil && controllerRef.Kind != "SandboxWarmPool" {
+		if _, ok := latest.Labels[warmPoolSandboxLabel]; !ok {
 			continue
 		}
 
 		// If a specific pool is requested, only consider sandboxes from that pool
 		if policy.IsSpecificPool() {
 			specificPoolHash := sandboxcontrollers.NameHash(string(policy))
-			if sb.Labels[warmPoolSandboxLabel] != specificPoolHash {
+			if latest.Labels[warmPoolSandboxLabel] != specificPoolHash {
 				continue
 			}
 		}
 
-		adoptionCandidates = append(adoptionCandidates, sb)
-	}
-
-	if policy == extensionsv1alpha1.WarmPoolPolicyNone {
-		logger.Info("Skipping warm pool adoption based on warmpool policy", "claim", claim.Name, "warmpool", policy)
-		return nil, nil
+		adoptionCandidates = append(adoptionCandidates, latest)
 	}
 
 	// Try to adopt from warm pool
