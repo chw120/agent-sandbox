@@ -1704,3 +1704,137 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 		}
 	})
 }
+
+func TestSandboxClaimNoReAdoptionStaleCache(t *testing.T) {
+	scheme := newScheme(t)
+
+	template := &extensionsv1alpha1.SandboxTemplate{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-template", Namespace: "default"},
+		Spec: extensionsv1alpha1.SandboxTemplateSpec{
+			PodTemplate: sandboxv1alpha1.PodTemplate{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "c", Image: "img"}},
+				},
+			},
+		},
+	}
+
+	poolNameHash := sandboxcontrollers.NameHash("test-pool")
+
+	// Claim with EMPTY status (simulating failed update)
+	claim := &extensionsv1alpha1.SandboxClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-claim", Namespace: "default", UID: "claim-uid"},
+		Spec:       extensionsv1alpha1.SandboxClaimSpec{TemplateRef: extensionsv1alpha1.SandboxTemplateRef{Name: "test-template"}},
+		Status:     extensionsv1alpha1.SandboxClaimStatus{}, // Empty status!
+	}
+
+	// The Sandbox as it appears in the STALE CACHE (still in warm pool)
+	staleSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "adopted-sb", Namespace: "default",
+			CreationTimestamp: metav1.Now(),
+			Labels: map[string]string{
+				warmPoolSandboxLabel:   poolNameHash,
+				"agents.x-k8s.io/sandbox-template-ref-hash": sandboxcontrollers.NameHash("test-template"),
+			},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			Replicas:    ptr.To(int32(1)),
+			PodTemplate: sandboxv1alpha1.PodTemplate{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "c", Image: "img"}}}},
+		},
+		Status: sandboxv1alpha1.SandboxStatus{
+			Conditions: []metav1.Condition{{
+				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionTrue, Reason: "Ready",
+			}},
+		},
+	}
+
+	// The Sandbox as it appears in the LIVE API SERVER (already adopted!)
+	liveSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "adopted-sb", Namespace: "default",
+			Labels: map[string]string{
+				extensionsv1alpha1.SandboxIDLabel: "claim-uid",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "extensions.agents.x-k8s.io/v1alpha1", Kind: "SandboxClaim",
+				Name: "test-claim", UID: "claim-uid", Controller: ptr.To(true),
+			}},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			Replicas:    ptr.To(int32(1)),
+			PodTemplate: sandboxv1alpha1.PodTemplate{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "c", Image: "img"}}}},
+		},
+	}
+
+	// Another warm pool sandbox that should NOT be adopted
+	poolSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pool-sb-extra", Namespace: "default",
+			CreationTimestamp: metav1.Time{Time: time.Now().Add(-1 * time.Hour)},
+			Labels: map[string]string{
+				warmPoolSandboxLabel:   poolNameHash,
+				"agents.x-k8s.io/sandbox-template-ref-hash": sandboxcontrollers.NameHash("test-template"),
+			},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			Replicas:    ptr.To(int32(1)),
+			PodTemplate: sandboxv1alpha1.PodTemplate{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "c", Image: "img"}}}},
+		},
+		Status: sandboxv1alpha1.SandboxStatus{
+			Conditions: []metav1.Condition{{
+				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionTrue, Reason: "Ready",
+			}},
+		},
+	}
+
+	// Fake client simulating the CACHE (returns stale sandbox)
+	fakeCacheClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(template, claim, staleSandbox, poolSandbox).
+		WithStatusSubresource(claim).
+		Build()
+
+	// Transaction record ConfigMap for failure recovery
+	recordCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "claim-claim-uid-record",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"sandboxName": "adopted-sb",
+		},
+	}
+
+	// Fake client simulating the LIVE API SERVER (returns live sandbox and record)
+	fakeLiveClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(template, claim, liveSandbox, poolSandbox, recordCM).
+		WithStatusSubresource(claim).
+		Build()
+
+	reconciler := &SandboxClaimReconciler{
+		Client:    fakeCacheClient, // Reads from cache
+		APIReader: fakeLiveClient,  // Reads from API server
+		Scheme:    scheme,
+		Recorder:  events.NewFakeRecorder(10),
+		Tracer:    asmetrics.NewNoOp(),
+	}
+
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-claim", Namespace: "default"}}
+	ctx := context.Background()
+
+	_, err := reconciler.Reconcile(ctx, req)
+	if err != nil {
+		t.Fatalf("reconcile failed: %v", err)
+	}
+
+	// Verify the pool sandbox was NOT adopted (still has warm pool labels in cache!)
+	var extra sandboxv1alpha1.Sandbox
+	if err := fakeCacheClient.Get(ctx, types.NamespacedName{Name: "pool-sb-extra", Namespace: "default"}, &extra); err != nil {
+		t.Fatalf("failed to get pool sandbox: %v", err)
+	}
+	if _, ok := extra.Labels[warmPoolSandboxLabel]; !ok {
+		t.Error("pool sandbox should still have warm pool label (should not have been adopted)")
+	}
+}
