@@ -259,7 +259,6 @@ func main() {
 			Scheme:           mgr.GetScheme(),
 			Recorder:         mgr.GetEventRecorder("sandboxclaim-controller"),
 			Tracer:           instrumenter,
-			UseFieldIndexers: true, // Enable Option B!
 		}).SetupWithManager(mgr, sandboxClaimConcurrentWorkers); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "SandboxClaim")
 			os.Exit(1)
