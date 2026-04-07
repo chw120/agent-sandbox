@@ -57,6 +57,7 @@ func getWarmPoolPolicy(claim *extensionsv1alpha1.SandboxClaim) extensionsv1alpha
 // SandboxClaimReconciler reconciles a SandboxClaim object
 type SandboxClaimReconciler struct {
 	client.Client
+	APIReader               client.Reader
 	Scheme                  *runtime.Scheme
 	Recorder                events.EventRecorder
 	Tracer                  asmetrics.Instrumenter
@@ -474,6 +475,25 @@ func (r *SandboxClaimReconciler) adoptSandboxFromCandidates(ctx context.Context,
 
 		logger.Info("Successfully adopted sandbox from warm pool", "sandbox", adopted.Name, "claim", claim.Name)
 
+		// Create a transaction record ConfigMap for failure recovery
+		recordCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("claim-%s-record", claim.UID),
+				Namespace: claim.Namespace,
+			},
+			Data: map[string]string{
+				"sandboxName": adopted.Name,
+			},
+		}
+		if err := controllerutil.SetControllerReference(claim, recordCM, r.Scheme); err != nil {
+			logger.Error(err, "Failed to set controller reference on record ConfigMap", "claim", claim.Name)
+		}
+		if err := r.Create(ctx, recordCM); err != nil {
+			if !k8errors.IsAlreadyExists(err) {
+				logger.Error(err, "Failed to create record ConfigMap", "claim", claim.Name)
+			}
+		}
+
 		if r.Recorder != nil {
 			r.Recorder.Eventf(claim, nil, corev1.EventTypeNormal, "SandboxAdopted", "Adoption", "Adopted warm pool Sandbox %q", adopted.Name)
 		}
@@ -600,6 +620,23 @@ func (r *SandboxClaimReconciler) getOrCreateSandbox(ctx context.Context, claim *
 		} else if !k8errors.IsNotFound(err) {
 			return nil, fmt.Errorf("failed to get sandbox %q from status: %w", statusName, err)
 		}
+	}
+
+	// Check if a transaction record exists (handles retry after failed status update)
+	recordName := fmt.Sprintf("claim-%s-record", claim.UID)
+	recordCM := &corev1.ConfigMap{}
+	if err := r.APIReader.Get(ctx, client.ObjectKey{Namespace: claim.Namespace, Name: recordName}, recordCM); err == nil {
+		if sandboxName, ok := recordCM.Data["sandboxName"]; ok {
+			logger.Info("Found existing adopted sandbox from record ConfigMap", "sandbox", sandboxName, "claim", claim.Name)
+			sandbox := &v1alpha1.Sandbox{}
+			if err := r.APIReader.Get(ctx, client.ObjectKey{Namespace: claim.Namespace, Name: sandboxName}, sandbox); err == nil {
+				return sandbox, nil
+			} else if !k8errors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to get sandbox %q from record via APIReader: %w", sandboxName, err)
+			}
+		}
+	} else if !k8errors.IsNotFound(err) {
+		return nil, fmt.Errorf("failed to get record ConfigMap %q: %w", recordName, err)
 	}
 
 	// Try name-based lookup (sandbox created by createSandbox uses claim.Name)
