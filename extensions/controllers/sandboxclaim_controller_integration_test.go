@@ -100,7 +100,7 @@ func TestSandboxClaimNoReAdoptionIntegration(t *testing.T) {
 				Kind:       "SandboxClaim",
 				Name:       "test-claim",
 				UID:        claimUID,
-				Controller: ptr.To(true),
+				Controller: ptr.To(false),
 			}},
 		},
 		Spec: v1alpha1.SandboxSpec{
