@@ -440,7 +440,7 @@ func TestSandboxClaimReconcile(t *testing.T) {
 			}
 
 			allObjects := append(tc.existingObjects, claimToUse)
-			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(allObjects...).WithStatusSubresource(claimToUse).Build()
+			client := newFakeClientBuilder(scheme).WithScheme(scheme).WithObjects(allObjects...).WithStatusSubresource(claimToUse).Build()
 
 			reconciler := &SandboxClaimReconciler{
 				Client:   client,
@@ -618,7 +618,7 @@ func TestSandboxClaimCleanupPolicy(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			scheme := newScheme(t)
 			sandbox := createSandbox(tc.claim.Name, tc.sandboxIsExpired)
-			client := fake.NewClientBuilder().WithScheme(scheme).
+			client := newFakeClientBuilder(scheme).WithScheme(scheme).
 				WithObjects(template, tc.claim, sandbox).
 				WithStatusSubresource(tc.claim).Build()
 
@@ -696,9 +696,10 @@ func TestSandboxProvisionEvent(t *testing.T) {
 	}
 
 	fakeRecorder := events.NewFakeRecorder(10)
-	client := fake.NewClientBuilder().WithScheme(scheme).
+	client := newFakeClientBuilder(scheme).WithScheme(scheme).
 		WithObjects(claim, template).
-		WithStatusSubresource(claim).Build()
+		WithStatusSubresource(claim).
+		Build()
 
 	reconciler := &SandboxClaimReconciler{
 		Client:   client,
@@ -972,7 +973,7 @@ func TestSandboxClaimSandboxAdoption(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			scheme := newScheme(t)
-			var fakeClient client.Client = fake.NewClientBuilder().
+			var fakeClient client.Client = newFakeClientBuilder(scheme).
 				WithScheme(scheme).
 				WithObjects(tc.existingObjects...).
 				WithStatusSubresource(claim).
@@ -1110,7 +1111,100 @@ func TestSandboxClaimNoReAdoption(t *testing.T) {
 		},
 	}
 
-	fakeClient := fake.NewClientBuilder().
+	fakeClient := newFakeClientBuilder(scheme).
+		WithScheme(scheme).
+		WithObjects(template, claim, adoptedSandbox, poolSandbox).
+		WithStatusSubresource(claim).
+		Build()
+
+	reconciler := &SandboxClaimReconciler{
+		Client:   fakeClient,
+		Scheme:   scheme,
+		Recorder: events.NewFakeRecorder(10),
+		Tracer:   asmetrics.NewNoOp(),
+	}
+
+	req := reconcile.Request{NamespacedName: types.NamespacedName{Name: "test-claim", Namespace: "default"}}
+	ctx := context.Background()
+
+	_, err := reconciler.Reconcile(ctx, req)
+	if err != nil {
+		t.Fatalf("reconcile failed: %v", err)
+	}
+
+	// Verify the pool sandbox was NOT adopted (still has warm pool labels)
+	var extra sandboxv1alpha1.Sandbox
+	if err := fakeClient.Get(ctx, types.NamespacedName{Name: "pool-sb-extra", Namespace: "default"}, &extra); err != nil {
+		t.Fatalf("failed to get pool sandbox: %v", err)
+	}
+	if _, ok := extra.Labels[warmPoolSandboxLabel]; !ok {
+		t.Error("pool sandbox should still have warm pool label (should not have been adopted)")
+	}
+}
+
+func TestSandboxClaimNoReAdoptionOnStatusUpdateFailure(t *testing.T) {
+	scheme := newScheme(t)
+
+	template := &extensionsv1alpha1.SandboxTemplate{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-template", Namespace: "default"},
+		Spec: extensionsv1alpha1.SandboxTemplateSpec{
+			PodTemplate: sandboxv1alpha1.PodTemplate{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "c", Image: "img"}},
+				},
+			},
+		},
+	}
+
+	poolNameHash := sandboxcontrollers.NameHash("test-pool")
+
+	// Claim with EMPTY status (simulating failed update)
+	claim := &extensionsv1alpha1.SandboxClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-claim", Namespace: "default", UID: "claim-uid"},
+		Spec:       extensionsv1alpha1.SandboxClaimSpec{TemplateRef: extensionsv1alpha1.SandboxTemplateRef{Name: "test-template"}},
+		Status:     extensionsv1alpha1.SandboxClaimStatus{}, // Empty status!
+	}
+
+	// The previously adopted sandbox (owned by claim, different name)
+	// We add the SandboxIDLabel to simulate that it was adopted and labeled in the previous reconcile.
+	adoptedSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "adopted-sb", Namespace: "default",
+			Labels: map[string]string{
+				extensionsv1alpha1.SandboxIDLabel: "claim-uid",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "extensions.agents.x-k8s.io/v1alpha1", Kind: "SandboxClaim",
+				Name: "test-claim", UID: "claim-uid", Controller: ptr.To(true),
+			}},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			Replicas:    ptr.To(int32(1)),
+			PodTemplate: sandboxv1alpha1.PodTemplate{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "c", Image: "img"}}}},
+		},
+	}
+
+	// Another warm pool sandbox that should NOT be adopted
+	poolSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pool-sb-extra", Namespace: "default",
+			Labels: map[string]string{
+				warmPoolSandboxLabel:   poolNameHash,
+				sandboxTemplateRefHash: sandboxcontrollers.NameHash("test-template"),
+			},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			Replicas:    ptr.To(int32(1)),
+			PodTemplate: sandboxv1alpha1.PodTemplate{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "c", Image: "img"}}}},
+		},
+		Status: sandboxv1alpha1.SandboxStatus{
+			Conditions: []metav1.Condition{{
+				Type: string(sandboxv1alpha1.SandboxConditionReady), Status: metav1.ConditionTrue, Reason: "Ready",
+			}},
+		},
+	}
+
+	fakeClient := newFakeClientBuilder(scheme).
 		WithScheme(scheme).
 		WithObjects(template, claim, adoptedSandbox, poolSandbox).
 		WithStatusSubresource(claim).
@@ -1241,7 +1335,7 @@ func TestSandboxClaimCreationMetric(t *testing.T) {
 	t.Run("Cold Start", func(t *testing.T) {
 		asmetrics.SandboxClaimCreationTotal.Reset()
 		scheme := newScheme(t)
-		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(template, claim).WithStatusSubresource(claim).Build()
+		client := newFakeClientBuilder(scheme).WithScheme(scheme).WithObjects(template, claim).WithStatusSubresource(claim).Build()
 		reconciler := &SandboxClaimReconciler{
 			Client:   client,
 			Scheme:   scheme,
@@ -1297,7 +1391,7 @@ func TestSandboxClaimCreationMetric(t *testing.T) {
 		}
 
 		scheme := newScheme(t)
-		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(template, claim, warmSandbox).WithStatusSubresource(claim).Build()
+		client := newFakeClientBuilder(scheme).WithScheme(scheme).WithObjects(template, claim, warmSandbox).WithStatusSubresource(claim).Build()
 		reconciler := &SandboxClaimReconciler{
 			Client:   client,
 			Scheme:   scheme,
@@ -1334,6 +1428,31 @@ func newScheme(t *testing.T) *runtime.Scheme {
 		t.Fatalf("add to scheme: (%v)", err)
 	}
 	return scheme
+}
+
+func newFakeClientBuilder(scheme *runtime.Scheme) *fake.ClientBuilder {
+	return fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithIndex(&sandboxv1alpha1.Sandbox{}, "idx.claim-uid", func(obj client.Object) []string {
+			sb := obj.(*sandboxv1alpha1.Sandbox)
+			if sb.Labels == nil {
+				return nil
+			}
+			if val, ok := sb.Labels[extensionsv1alpha1.SandboxIDLabel]; ok {
+				return []string{val}
+			}
+			return nil
+		}).
+		WithIndex(&sandboxv1alpha1.Sandbox{}, "idx.template-hash", func(obj client.Object) []string {
+			sb := obj.(*sandboxv1alpha1.Sandbox)
+			if sb.Labels == nil {
+				return nil
+			}
+			if val, ok := sb.Labels["agents.x-k8s.io/sandbox-template-ref-hash"]; ok {
+				return []string{val}
+			}
+			return nil
+		})
 }
 
 func ignoreTimestamp(_, _ metav1.Time) bool {
@@ -1440,7 +1559,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 			createWarmPoolSandbox("pool-sb-1", "test-pool", true),
 		}
 
-		fakeClient := fake.NewClientBuilder().
+		fakeClient := newFakeClientBuilder(scheme).
 			WithScheme(scheme).
 			WithObjects(existingObjects...).
 			WithStatusSubresource(claimWithNone).
@@ -1496,7 +1615,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 			createWarmPoolSandbox("pool2-sb", "other-pool", true),
 		}
 
-		fakeClient := fake.NewClientBuilder().
+		fakeClient := newFakeClientBuilder(scheme).
 			WithScheme(scheme).
 			WithObjects(existingObjects...).
 			WithStatusSubresource(claimWithSpecificPool).
@@ -1557,7 +1676,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 			createWarmPoolSandbox("pool-sb-1", "test-pool", true),
 		}
 
-		fakeClient := fake.NewClientBuilder().
+		fakeClient := newFakeClientBuilder(scheme).
 			WithScheme(scheme).
 			WithObjects(existingObjects...).
 			WithStatusSubresource(claimWithSpecificPool).
@@ -1608,7 +1727,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 			createWarmPoolSandbox("pool-sb-1", "test-pool", true),
 		}
 
-		fakeClient := fake.NewClientBuilder().
+		fakeClient := newFakeClientBuilder(scheme).
 			WithScheme(scheme).
 			WithObjects(existingObjects...).
 			WithStatusSubresource(claimWithDefault).
@@ -1658,7 +1777,7 @@ func TestSandboxClaimWarmPoolPolicy(t *testing.T) {
 			createWarmPoolSandbox("pool-sb-1", "test-pool", true),
 		}
 
-		fakeClient := fake.NewClientBuilder().
+		fakeClient := newFakeClientBuilder(scheme).
 			WithScheme(scheme).
 			WithObjects(existingObjects...).
 			WithStatusSubresource(claimWithNil).

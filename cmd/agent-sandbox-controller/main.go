@@ -29,11 +29,13 @@ import (
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"sigs.k8s.io/agent-sandbox/controllers"
+	v1alpha1 "sigs.k8s.io/agent-sandbox/api/v1alpha1"
 	extensionsv1alpha1 "sigs.k8s.io/agent-sandbox/extensions/api/v1alpha1"
 	extensionscontrollers "sigs.k8s.io/agent-sandbox/extensions/controllers"
 	asmetrics "sigs.k8s.io/agent-sandbox/internal/metrics"
@@ -222,11 +224,42 @@ func main() {
 	}
 
 	if extensions {
+		// Index Sandboxes by Claim UID label for fast lookup
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Sandbox{}, "idx.claim-uid", func(rawObj client.Object) []string {
+			sb := rawObj.(*v1alpha1.Sandbox)
+			if sb.Labels == nil {
+				return nil
+			}
+			if val, ok := sb.Labels[extensionsv1alpha1.SandboxIDLabel]; ok {
+				return []string{val}
+			}
+			return nil
+		}); err != nil {
+			setupLog.Error(err, "unable to create index", "index", "idx.claim-uid")
+			os.Exit(1)
+		}
+
+		// Index Sandboxes by Template Hash label for fast lookup
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &v1alpha1.Sandbox{}, "idx.template-hash", func(rawObj client.Object) []string {
+			sb := rawObj.(*v1alpha1.Sandbox)
+			if sb.Labels == nil {
+				return nil
+			}
+			if val, ok := sb.Labels["agents.x-k8s.io/sandbox-template-ref-hash"]; ok {
+				return []string{val}
+			}
+			return nil
+		}); err != nil {
+			setupLog.Error(err, "unable to create index", "index", "idx.template-hash")
+			os.Exit(1)
+		}
+
 		if err = (&extensionscontrollers.SandboxClaimReconciler{
-			Client:   mgr.GetClient(),
-			Scheme:   mgr.GetScheme(),
-			Recorder: mgr.GetEventRecorder("sandboxclaim-controller"),
-			Tracer:   instrumenter,
+			Client:           mgr.GetClient(),
+			Scheme:           mgr.GetScheme(),
+			Recorder:         mgr.GetEventRecorder("sandboxclaim-controller"),
+			Tracer:           instrumenter,
+			UseFieldIndexers: true, // Enable Option B!
 		}).SetupWithManager(mgr, sandboxClaimConcurrentWorkers); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "SandboxClaim")
 			os.Exit(1)

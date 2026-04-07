@@ -441,6 +441,12 @@ func (r *SandboxClaimReconciler) adoptSandboxFromCandidates(ctx context.Context,
 		delete(adopted.Labels, warmPoolSandboxLabel)
 		delete(adopted.Labels, sandboxTemplateRefHash)
 
+		// Add label to identify owning claim UID
+		if adopted.Labels == nil {
+			adopted.Labels = make(map[string]string)
+		}
+		adopted.Labels[extensionsv1alpha1.SandboxIDLabel] = string(claim.UID)
+
 		// Transfer ownership from SandboxWarmPool to SandboxClaim
 		adopted.OwnerReferences = nil
 		if err := controllerutil.SetControllerReference(claim, adopted, r.Scheme); err != nil {
@@ -627,44 +633,47 @@ func (r *SandboxClaimReconciler) getOrCreateSandbox(ctx context.Context, claim *
 		return sandbox, nil
 	}
 
-	// Single List: ownership guard + adoption candidate scan.
-	// This queries the informer cache (not the API server), so it's fast.
-	logger.V(1).Info("Listing sandbox adoption candidates", "claim", claim.Name)
-	allSandboxes := &v1alpha1.SandboxList{}
-	if err := r.List(ctx, allSandboxes, client.InNamespace(claim.Namespace)); err != nil {
-		return nil, fmt.Errorf("failed to list sandboxes: %w", err)
+	// Check if we already own a sandbox by label (handles retry after failed status update)
+	logger.V(1).Info("Checking for already adopted sandbox by label index", "claim", claim.Name)
+	ownedSandboxes := &v1alpha1.SandboxList{}
+	if err := r.List(ctx, ownedSandboxes, client.InNamespace(claim.Namespace), client.MatchingFields{"idx.claim-uid": string(claim.UID)}); err != nil {
+		return nil, fmt.Errorf("failed to list owned sandboxes: %w", err)
+	}
+	if len(ownedSandboxes.Items) > 0 {
+		logger.Info("Found existing owned sandbox by label", "sandbox", ownedSandboxes.Items[0].Name, "claim", claim.Name)
+		return &ownedSandboxes.Items[0], nil
 	}
 
 	policy := getWarmPoolPolicy(claim)
+	if policy == extensionsv1alpha1.WarmPoolPolicyNone {
+		logger.Info("Skipping warm pool adoption based on warmpool policy", "claim", claim.Name, "warmpool", policy)
+		return nil, nil
+	}
+
+	// Look for candidates by template hash (avoid listing all sandboxes)
+	logger.V(1).Info("Listing sandbox adoption candidates by template hash index", "claim", claim.Name)
 	templateHash := sandboxcontrollers.NameHash(claim.Spec.TemplateRef.Name)
+	candidates := &v1alpha1.SandboxList{}
+	if err := r.List(ctx, candidates, client.InNamespace(claim.Namespace), client.MatchingFields{"idx.template-hash": templateHash}); err != nil {
+		return nil, fmt.Errorf("failed to list candidates: %w", err)
+	}
+
 	var adoptionCandidates []*v1alpha1.Sandbox
 
-	for i := range allSandboxes.Items {
-		sb := &allSandboxes.Items[i]
+	for i := range candidates.Items {
+		sb := &candidates.Items[i]
 		if !sb.DeletionTimestamp.IsZero() {
 			continue
 		}
 
-		// Ownership guard: if this claim already owns a sandbox, return it
-		if metav1.IsControlledBy(sb, claim) {
-			logger.Info("Found existing owned sandbox", "sandbox", sb.Name, "claim", claim.Name)
-			return sb, nil
-		}
-
-		// Skip warm pool adoption entirely if policy is "none"
-		if policy == extensionsv1alpha1.WarmPoolPolicyNone {
+		// Skip if already owned by someone else (should not happen if it has warm pool label, but good to check)
+		controllerRef := metav1.GetControllerOf(sb)
+		if controllerRef != nil && controllerRef.Kind != "SandboxWarmPool" {
 			continue
 		}
 
 		// Collect adoption candidates from warm pool
 		if _, ok := sb.Labels[warmPoolSandboxLabel]; !ok {
-			continue
-		}
-		if sb.Labels[sandboxTemplateRefHash] != templateHash {
-			continue
-		}
-		controllerRef := metav1.GetControllerOf(sb)
-		if controllerRef != nil && controllerRef.Kind != "SandboxWarmPool" {
 			continue
 		}
 
