@@ -2830,3 +2830,74 @@ func TestSandboxClaimPreventsDuplicateAdoptionDuringCacheLag(t *testing.T) {
 		t.Error("expected extra warm sandbox to still have warm pool label after 2nd pass (should not have been adopted)")
 	}
 }
+
+func TestSandboxAdoptionFailsOnConcurrentUpdate(t *testing.T) {
+	scheme := newScheme(t)
+
+	claim := &extensionsv1alpha1.SandboxClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-claim",
+			Namespace: "default",
+			UID:       "claim-uid-123",
+		},
+		Spec: extensionsv1alpha1.SandboxClaimSpec{
+			TemplateRef: extensionsv1alpha1.SandboxTemplateRef{Name: "test-template"},
+		},
+	}
+
+	adoptedSandbox := &sandboxv1alpha1.Sandbox{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "adopted-sb",
+			Namespace: "default",
+			UID:       "adopted-sb-uid",
+			Labels: map[string]string{
+				extensionsv1alpha1.SandboxIDLabel: "claim-uid-123",
+			},
+		},
+		Spec: sandboxv1alpha1.SandboxSpec{
+			PodTemplate: sandboxv1alpha1.PodTemplate{
+				ObjectMeta: sandboxv1alpha1.PodMetadata{
+					Labels: map[string]string{
+						extensionsv1alpha1.SandboxIDLabel: "claim-uid-123",
+					},
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(claim, adoptedSandbox).
+		Build()
+
+	reconciler := &SandboxClaimReconciler{
+		Client:           fakeClient,
+		Scheme:           scheme,
+		Recorder:         events.NewFakeRecorder(10),
+		Tracer:           asmetrics.NewNoOp(),
+	}
+
+	// Simulate stale read
+	staleAdopted := adoptedSandbox.DeepCopy()
+
+	// Another worker updates the sandbox on the server (fake client)
+	serverAdopted := &sandboxv1alpha1.Sandbox{}
+	if err := fakeClient.Get(context.Background(), types.NamespacedName{Name: "adopted-sb", Namespace: "default"}, serverAdopted); err != nil {
+		t.Fatalf("failed to get adopted sandbox for concurrent update: %v", err)
+	}
+	serverAdopted.Labels["concurrent-update"] = "true"
+	if err := fakeClient.Update(context.Background(), serverAdopted); err != nil {
+		t.Fatalf("failed to simulate concurrent update: %v", err)
+	}
+
+	// Now try to complete adoption with the stale object
+	err := reconciler.completeAdoption(context.Background(), claim, staleAdopted)
+
+	// With Update, this should fail with conflict
+	if err == nil {
+		t.Fatal("Expected completeAdoption to fail with conflict error, but it succeeded (Patch without lock behavior would cause this)")
+	}
+	if !k8errors.IsConflict(err) {
+		t.Errorf("Expected conflict error, got: %v", err)
+	}
+}
