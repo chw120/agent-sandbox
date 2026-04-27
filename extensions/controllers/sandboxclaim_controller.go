@@ -605,11 +605,12 @@ func (r *SandboxClaimReconciler) adoptSandboxFromCandidates(ctx context.Context,
 			logger.Info("Attempting sandbox adoption", "sandbox candidate", adopted.Name, "warm pool", poolName, "claim", claim.Name)
 
 			// Update claim to record adoption (optimistic lock)
+			patch := client.MergeFromWithOptions(claim.DeepCopy(), client.MergeFromWithOptimisticLock{})
 			if claim.Labels == nil {
 				claim.Labels = make(map[string]string)
 			}
 			claim.Labels[extensionsv1alpha1.AssignedSandboxNameLabel] = adopted.Name
-			if err := r.Update(ctx, claim); err != nil {
+			if err := r.Patch(ctx, claim, patch); err != nil {
 				r.WarmSandboxQueue.Add(templateHash, adoptedKey)
 				if k8errors.IsConflict(err) {
 					// Conflict means someone else updated the claim. We fail and retry.
@@ -721,7 +722,7 @@ func (r *SandboxClaimReconciler) completeAdoption(ctx context.Context, claim *ex
 		}
 	}
 
-	if err := r.Patch(ctx, adopted, client.MergeFrom(originalAdopted)); err != nil {
+	if err := r.Patch(ctx, adopted, client.MergeFromWithOptions(originalAdopted, client.MergeFromWithOptimisticLock{})); err != nil {
 		return err
 	}
 
@@ -1024,7 +1025,7 @@ func (r *SandboxClaimReconciler) getOrCreateSandbox(ctx context.Context, claim *
 				}
 
 				controllerRef := metav1.GetControllerOf(sandbox)
-				if controllerRef != nil && controllerRef.Kind == "SandboxWarmPool" {
+				if controllerRef == nil || controllerRef.Kind != "SandboxClaim" {
 					// Still in warm pool. Try to complete adoption!
 					logger.Info("Sandbox found by label still in warm pool, trying to complete adoption", "sandbox", sbName, "claim", claim.Name)
 
