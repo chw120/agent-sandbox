@@ -253,13 +253,14 @@ Refer to the [Prometheus Python Client documentation on Multiprocess Mode](https
 Example:
 ```python
 import os
-from prometheus_client import CollectorRegistry, multiproc, generate_latest
+from prometheus_client import CollectorRegistry, generate_latest
+from prometheus_client.multiprocess import MultiProcessCollector
 
 # Ensure PROMETHEUS_MULTIPROC_DIR is set in environment
 # os.environ['PROMETHEUS_MULTIPROC_DIR'] = '/path/to/shared/dir'
 
 registry = CollectorRegistry()
-multiproc.MultiProcessCollector(registry)
+MultiProcessCollector(registry)
 metrics_data = generate_latest(registry)
 ```
 
