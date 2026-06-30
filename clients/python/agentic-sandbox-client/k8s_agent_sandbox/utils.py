@@ -146,3 +146,12 @@ def is_valid_gateway_hostname(s: str) -> bool:
             return False
     last = s[-1]
     return last != '-' and last != '.'
+
+
+def build_base_url(scheme: str, host: str, port: int | None = None) -> str:
+    """Build base URL with IPv6 bracket handling."""
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if port is not None:
+        return f"{scheme}://{host}:{port}"
+    return f"{scheme}://{host}"

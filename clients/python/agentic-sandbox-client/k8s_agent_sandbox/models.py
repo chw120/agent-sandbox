@@ -13,8 +13,13 @@
 # limitations under the License.
 
 import re
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 from pydantic import BaseModel, field_validator
+
+class TLSConfig(BaseModel):
+    """Optional TLS settings for connections that aren't plain HTTP."""
+    ca_cert: Optional[str] = None              # PEM content or file path
+    insecure_skip_verify: bool = False         # Self-signed / dev environment usage
 
 class ExecutionResult(BaseModel):
     """A structured object for holding the result of a command execution."""
@@ -33,6 +38,7 @@ class SandboxDirectConnectionConfig(BaseModel):
     """Configuration for connecting directly to a Sandbox URL."""
     api_url: str  # Direct URL to the router.
     server_port: int = 8888  # Port the sandbox container listens on.
+    tls: Optional[TLSConfig] = None
 
 class SandboxGatewayConnectionConfig(BaseModel):
     """Configuration for connecting via Kubernetes Gateway API."""
@@ -40,12 +46,16 @@ class SandboxGatewayConnectionConfig(BaseModel):
     gateway_namespace: str = "default"  # Namespace where the Gateway resource resides.
     gateway_ready_timeout: int = 180  # Timeout in seconds to wait for Gateway IP.
     server_port: int = 8888  # Port the sandbox container listens on.
+    scheme: Literal["http", "https"] = "http"  # Protocol scheme (http or https).
+    tls: Optional[TLSConfig] = None
 
 class SandboxLocalTunnelConnectionConfig(BaseModel):
     """Configuration for connecting via kubectl port-forward."""
     port_forward_ready_timeout: int = 30  # Timeout in seconds to wait for port-forward to be ready.
     server_port: int = 8888  # Port the sandbox container listens on.
     router_namespace: str = "agent-sandbox-system"  # Namespace where the Router service resides.
+    scheme: Literal["http", "https"] = "http"
+    tls: Optional[TLSConfig] = None
 
     @field_validator("router_namespace")
     @classmethod
@@ -65,6 +75,8 @@ class SandboxInClusterConnectionConfig(BaseModel):
     """
     server_port: int = 8888  # Port the sandbox container listens on.
     use_pod_ip: bool = False  # If True, connect via pod IP instead of cluster DNS.
+    scheme: Literal["http", "https"] = "http"  # Protocol scheme (http or https).
+    tls: Optional[TLSConfig] = None
 
 SandboxConnectionConfig = Union[
     SandboxDirectConnectionConfig,

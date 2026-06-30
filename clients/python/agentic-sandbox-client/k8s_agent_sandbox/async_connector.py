@@ -18,17 +18,20 @@ import math
 from typing import Callable, Awaitable
 
 import httpx
+import ssl
 
 logger = logging.getLogger(__name__)
 
 from .async_k8s_helper import AsyncK8sHelper
 from .exceptions import SandboxRequestError
+from .utils import build_base_url
 from .models import (
     SandboxConnectionConfig,
     SandboxDirectConnectionConfig,
     SandboxGatewayConnectionConfig,
     SandboxInClusterConnectionConfig,
     SandboxLocalTunnelConnectionConfig,
+    TLSConfig,
 )
 
 RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
@@ -89,20 +92,36 @@ class AsyncSandboxConnector:
         self._pod_ip_auth_failed = False
         self._cached_pod_ip_url: str | None = None
         if isinstance(connection_config, SandboxInClusterConnectionConfig):
-            self._dns_url = (
-                f"http://{sandbox_id}.{namespace}"
-                f".svc.cluster.local:{connection_config.server_port}"
-            )
+            host = f"{sandbox_id}.{namespace}.svc.cluster.local"
+            self._dns_url = build_base_url(connection_config.scheme, host, connection_config.server_port)
             self._server_port = connection_config.server_port
+            self._scheme = connection_config.scheme
         else:
             self._dns_url = None
             self._server_port = None
+            self._scheme = None
 
         self._inject_router_headers = not isinstance(
             connection_config, SandboxInClusterConnectionConfig
         )
 
-        transport = httpx.AsyncHTTPTransport(retries=3)
+        tls = getattr(connection_config, "tls", None)
+        verify = True
+        if tls and isinstance(tls, TLSConfig):
+            if tls.ca_cert:
+                if "-----BEGIN CERTIFICATE-----" in tls.ca_cert:
+                    context = ssl.create_default_context()
+                    context.load_verify_locations(cadata=tls.ca_cert)
+                    verify = context
+                else:
+                    verify = ssl.create_default_context(cafile=tls.ca_cert)
+            if tls.insecure_skip_verify:
+                if verify is True:
+                    verify = ssl.create_default_context()
+                verify.check_hostname = False
+                verify.verify_mode = ssl.CERT_NONE
+
+        transport = httpx.AsyncHTTPTransport(retries=3, verify=verify)
         self.client = httpx.AsyncClient(
             transport=transport, timeout=httpx.Timeout(60.0)
         )
@@ -115,8 +134,7 @@ class AsyncSandboxConnector:
                 pod_ip = await self._get_pod_ip()
                 if pod_ip:
                     self._pod_ip = pod_ip
-                    host = f"[{pod_ip}]" if ":" in pod_ip else pod_ip
-                    self._cached_pod_ip_url = f"http://{host}:{self._server_port}"
+                    self._cached_pod_ip_url = build_base_url(self._scheme, pod_ip, self._server_port)
                     self._pod_ip_resolved = True
                     return self._cached_pod_ip_url
             return self._dns_url
@@ -132,8 +150,7 @@ class AsyncSandboxConnector:
                 self.connection_config.gateway_namespace,
                 self.connection_config.gateway_ready_timeout,
             )
-            host = f"[{ip_address}]" if ":" in ip_address else ip_address
-            self._base_url = f"http://{host}"
+            self._base_url = build_base_url(self.connection_config.scheme, ip_address)
         else:
             raise ValueError(
                 f"AsyncSandboxConnector does not support {type(self.connection_config).__name__}."

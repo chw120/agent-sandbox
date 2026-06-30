@@ -28,6 +28,7 @@ from .models import (
     SandboxGatewayConnectionConfig,
     SandboxInClusterConnectionConfig,
     SandboxLocalTunnelConnectionConfig,
+    TLSConfig,
 )
 from .k8s_helper import K8sHelper
 from .metrics import sandbox_client_discovery_latency_ms
@@ -35,6 +36,7 @@ from .exceptions import (
     SandboxPortForwardError,
     SandboxRequestError,
 )
+from .utils import build_base_url
 
 ROUTER_SERVICE_NAME = "svc/sandbox-router-svc"
 
@@ -114,8 +116,7 @@ class GatewayConnectionStrategy(ConnectionStrategy):
                 self.config.gateway_namespace,
                 self.config.gateway_ready_timeout
             )
-            host = f"[{ip_address}]" if ":" in ip_address else ip_address
-            self.base_url = f"http://{host}"
+            self.base_url = build_base_url(self.config.scheme, ip_address)
             return self.base_url
         except Exception:
             status = "failure"
@@ -190,7 +191,7 @@ class LocalTunnelConnectionStrategy(ConnectionStrategy):
                         f"Tunnel crashed: {stderr.decode(errors='replace')}")
 
                 if self._is_port_open(local_port):
-                    self.base_url = f"http://127.0.0.1:{local_port}"
+                    self.base_url = build_base_url(self.config.scheme, "127.0.0.1", local_port)
                     logging.info(f"Tunnel ready at {self.base_url}")
                     return self.base_url
                 
@@ -245,10 +246,9 @@ class InClusterConnectionStrategy(ConnectionStrategy):
         config: SandboxInClusterConnectionConfig,
         get_pod_ip: Callable[[], str | None] | None = None,
     ):
-        self._dns_url = (
-            f"http://{sandbox_id}.{namespace}"
-            f".svc.cluster.local:{config.server_port}"
-        )
+        self._scheme = config.scheme
+        host = f"{sandbox_id}.{namespace}.svc.cluster.local"
+        self._dns_url = build_base_url(config.scheme, host, config.server_port)
         self._get_pod_ip = get_pod_ip
         self._server_port = config.server_port
         self._resolved = False
@@ -260,8 +260,7 @@ class InClusterConnectionStrategy(ConnectionStrategy):
                 return self._cached_pod_ip_url or self._dns_url
             pod_ip = self._get_pod_ip()
             if pod_ip:
-                host = f"[{pod_ip}]" if ":" in pod_ip else pod_ip
-                self._cached_pod_ip_url = f"http://{host}:{self._server_port}"
+                self._cached_pod_ip_url = build_base_url(self._scheme, pod_ip, self._server_port)
                 self._resolved = True
                 return self._cached_pod_ip_url
         return self._dns_url
@@ -311,6 +310,20 @@ class SandboxConnector:
         )
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
+        
+        tls = getattr(connection_config, "tls", None)
+        if tls and isinstance(tls, TLSConfig):
+            if tls.insecure_skip_verify:
+                self.session.verify = False
+            elif tls.ca_cert:
+                if "-----BEGIN CERTIFICATE-----" in tls.ca_cert:
+                    import tempfile
+                    temp_cert = tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".pem")
+                    temp_cert.write(tls.ca_cert)
+                    temp_cert.close()
+                    self.session.verify = temp_cert.name
+                else:
+                    self.session.verify = tls.ca_cert
         
 
     def _connection_strategy(self):
