@@ -91,6 +91,17 @@ class AsyncSandboxConnector:
         self._pod_ip_resolved = False
         self._pod_ip_auth_failed = False
         self._cached_pod_ip_url: str | None = None
+
+        import logging
+        logger = logging.getLogger(__name__)
+        if isinstance(connection_config, (SandboxGatewayConnectionConfig, SandboxInClusterConnectionConfig, SandboxLocalTunnelConnectionConfig)):
+            if getattr(connection_config, "scheme", "http") == "http":
+                logger.warning(
+                    "Connecting to %s over plaintext HTTP. Set scheme='https' + tls=... "
+                    "to encrypt. HTTP default will be removed in a future release.",
+                    type(connection_config).__name__,
+                )
+
         if isinstance(connection_config, SandboxInClusterConnectionConfig):
             host = f"{sandbox_id}.{namespace}.svc.cluster.local"
             self._dns_url = build_base_url(connection_config.scheme, host, connection_config.server_port)

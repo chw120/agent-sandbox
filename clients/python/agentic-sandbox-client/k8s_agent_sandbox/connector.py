@@ -297,6 +297,16 @@ class SandboxConnector:
         self._pod_ip_resolved = False
         self._pod_ip_auth_failed = False
 
+        import logging
+        logger = logging.getLogger(__name__)
+        if isinstance(connection_config, (SandboxGatewayConnectionConfig, SandboxInClusterConnectionConfig, SandboxLocalTunnelConnectionConfig)):
+            if getattr(connection_config, "scheme", "http") == "http":
+                logger.warning(
+                    "Connecting to %s over plaintext HTTP. Set scheme='https' + tls=... "
+                    "to encrypt. HTTP default will be removed in a future release.",
+                    type(connection_config).__name__,
+                )
+
         # Connection strategy initialization
         self.strategy = self._connection_strategy()
         
@@ -313,17 +323,19 @@ class SandboxConnector:
         
         tls = getattr(connection_config, "tls", None)
         if tls and isinstance(tls, TLSConfig):
-            if tls.insecure_skip_verify:
-                self.session.verify = False
-            elif tls.ca_cert:
+            verify_val = True
+            if tls.ca_cert:
                 if "-----BEGIN CERTIFICATE-----" in tls.ca_cert:
                     import tempfile
                     temp_cert = tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".pem")
                     temp_cert.write(tls.ca_cert)
                     temp_cert.close()
-                    self.session.verify = temp_cert.name
+                    verify_val = temp_cert.name
                 else:
-                    self.session.verify = tls.ca_cert
+                    verify_val = tls.ca_cert
+            if tls.insecure_skip_verify:
+                verify_val = False
+            self.session.verify = verify_val
         
 
     def _connection_strategy(self):

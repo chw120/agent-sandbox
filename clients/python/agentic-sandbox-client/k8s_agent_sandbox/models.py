@@ -14,7 +14,7 @@
 
 import re
 from typing import Literal, Union, Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 class TLSConfig(BaseModel):
     """Optional TLS settings for connections that aren't plain HTTP."""
@@ -40,14 +40,26 @@ class SandboxDirectConnectionConfig(BaseModel):
     server_port: int = 8888  # Port the sandbox container listens on.
     tls: Optional[TLSConfig] = None
 
+    @model_validator(mode="after")
+    def _check_direct_tls(self):
+        if self.tls is not None and not self.api_url.startswith("https://"):
+            raise ValueError("tls config requires api_url to use https://")
+        return self
+
 class SandboxGatewayConnectionConfig(BaseModel):
     """Configuration for connecting via Kubernetes Gateway API."""
     gateway_name: str  # Name of the Gateway resource.
     gateway_namespace: str = "default"  # Namespace where the Gateway resource resides.
     gateway_ready_timeout: int = 180  # Timeout in seconds to wait for Gateway IP.
-    server_port: int = 8888  # Port the sandbox container listens on.
+    server_port: int = 8888  # Port the sandbox container listens on. NOT used by the SDK to connect (Gateway exposes 80/443); informational only / used by HTTPRoute config.
     scheme: Literal["http", "https"] = "http"  # Protocol scheme (http or https).
     tls: Optional[TLSConfig] = None
+
+    @model_validator(mode="after")
+    def _check_tls_consistency(self):
+        if self.tls is not None and self.scheme == "http":
+            raise ValueError("tls config requires scheme='https'")
+        return self
 
 class SandboxLocalTunnelConnectionConfig(BaseModel):
     """Configuration for connecting via kubectl port-forward."""
@@ -56,6 +68,12 @@ class SandboxLocalTunnelConnectionConfig(BaseModel):
     router_namespace: str = "agent-sandbox-system"  # Namespace where the Router service resides.
     scheme: Literal["http", "https"] = "http"
     tls: Optional[TLSConfig] = None
+
+    @model_validator(mode="after")
+    def _check_tls_consistency(self):
+        if self.tls is not None and self.scheme == "http":
+            raise ValueError("tls config requires scheme='https'")
+        return self
 
     @field_validator("router_namespace")
     @classmethod
@@ -77,6 +95,12 @@ class SandboxInClusterConnectionConfig(BaseModel):
     use_pod_ip: bool = False  # If True, connect via pod IP instead of cluster DNS.
     scheme: Literal["http", "https"] = "http"  # Protocol scheme (http or https).
     tls: Optional[TLSConfig] = None
+
+    @model_validator(mode="after")
+    def _check_tls_consistency(self):
+        if self.tls is not None and self.scheme == "http":
+            raise ValueError("tls config requires scheme='https'")
+        return self
 
 SandboxConnectionConfig = Union[
     SandboxDirectConnectionConfig,

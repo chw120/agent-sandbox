@@ -131,7 +131,28 @@ finally:
     sandbox.terminate()
 ```
 
-### 2. Developer Mode (Local Tunnel)
+### 2. Production Mode with HTTPS (TLS)
+
+When running your Gateway with TLS (e.g., using `cert-manager`), you can configure the client to connect via `https` and optionally provide a custom CA certificate or skip verification for development.
+
+```python
+from k8s_agent_sandbox import SandboxClient
+from k8s_agent_sandbox.models import SandboxGatewayConnectionConfig, TLSConfig
+
+# Connect via the GKE Gateway over HTTPS
+client = SandboxClient(
+    connection_config=SandboxGatewayConnectionConfig(
+        gateway_name="external-https-gateway",
+        scheme="https",
+        tls=TLSConfig(
+            insecure_skip_verify=True, # For self-signed certificates
+            # ca_cert="-----BEGIN CERTIFICATE-----\n..." # Raw PEM or file path
+        )
+    )
+)
+```
+
+### 3. Developer Mode (Local Tunnel)
 
 Use this for local development or CI. The client automatically opens a secure tunnel to the
 Router Service using `kubectl`.
@@ -152,7 +173,7 @@ finally:
     sandbox.terminate()
 ```
 
-### 3. In-Cluster Mode (Direct Pod Connection)
+### 4. In-Cluster Mode (Direct Pod Connection)
 
 Use this when the client runs **inside the cluster** (for example, another pod in the same cluster).
 The client connects **directly to the sandbox runtime pod**, bypassing the sandbox router.
@@ -189,7 +210,7 @@ finally:
     sandbox.terminate()
 ```
 
-### 4. Advanced / Internal Mode
+### 5. Advanced / Internal Mode
 
 Use `SandboxDirectConnectionConfig` to bypass discovery entirely. Useful for:
 
@@ -213,7 +234,7 @@ finally:
     sandbox.terminate()
 ```
 
-### 5. Custom Ports
+### 6. Custom Ports
 
 If your sandbox runtime listens on a port other than 8888 (e.g., a Node.js app on 3000), specify `server_port`.
 
@@ -228,7 +249,7 @@ client = SandboxClient(
 sandbox = client.create_sandbox(warmpool="node-sandbox-warmpool", namespace="default")
 ```
 
-### 6. Async Client
+### 7. Async Client
 
 For async applications (FastAPI, aiohttp, async agent orchestrators), use the `AsyncSandboxClient`.
 Install the async extras first:
@@ -286,7 +307,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### 7. Labels and Pod Metadata
+### 8. Labels and Pod Metadata
 
 `create_sandbox` lets you attach metadata at two different levels:
 
@@ -321,7 +342,7 @@ Behavioral notes:
   domain allow-list and system-label restrictions are enforced server-side and
   are not replicated client-side.
 
-### 8. Custom Volume Claim Templates
+### 9. Custom Volume Claim Templates
 
 You can dynamically request persistent volumes to be attached to your Sandbox Pod by specifying `volume_claim_templates`. This allows the sandbox to mount custom PersistentVolumeClaims (PVCs).
 
