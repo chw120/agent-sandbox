@@ -257,8 +257,7 @@ class AsyncSandboxFleet:
         batch_results = await self._process_parallel(batch_tasks, process_fn, concurrency)
         for (i, _t), r in zip(batch_pairs, batch_results, strict=True):
           results[i] = r
-        for img in batch:
-          await self._to_thread(self._fleet.unwarm_image, img)
+        await self._to_thread(self._fleet.unwarm_images, batch)
     finally:
       if teardown:
         await self.teardown()
@@ -300,8 +299,7 @@ class AsyncSandboxFleet:
         batch_results = await self._process_parallel(batch_tasks, process_fn, concurrency)
         for (i, _t), r in zip(batch_pairs, batch_results, strict=True):
           results[i] = r
-        for img in batch:
-          await self._to_thread(self._fleet.unwarm_image, img)
+        await self._to_thread(self._fleet.unwarm_images, batch)
         if pending is not None:
           await pending                      # surface prefetch errors inside try
           pending = None

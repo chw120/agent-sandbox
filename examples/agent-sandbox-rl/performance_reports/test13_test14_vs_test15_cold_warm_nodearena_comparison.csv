@@ -1,0 +1,11 @@
+Category,Metric / Parameter,Test Case 13 (4 CLs - Cold 3000),Test Case 15-Cold (5 CLs NodeArena - Cold 3000),Cold Delta / Speedup,Test Case 14 (4 CLs - Warm 3000),Test Case 15-Warm (5 CLs NodeArena - Warm 3000),Warm Delta / Speedup
+Cluster Spec,GKE Cluster Release,v1.35.6-gke.1049000,v1.35.6-gke.1049000,Identical,v1.35.6-gke.1049000,v1.35.6-gke.1049000,Identical
+Cluster Spec,Secondary Boot Disk Cache,Squashed 1-Layer SBD v3 (630 MB),Squashed 1-Layer SBD v3 (630 MB),Identical SBD v3,Squashed 1-Layer SBD v3 (630 MB),Squashed 1-Layer SBD v3 (630 MB),Identical SBD v3
+GCFS Host Daemon,Patched CLs Count,4 CLs (+947247005 VFS Caching),5 CLs (+951055332 NodeArena Slab Allocator),+CL/951055332 eliminates layer unmarshal GC roots,4 CLs (+947247005 VFS Caching),5 CLs (+951055332 NodeArena Slab Allocator),+CL/951055332 reduces working set heap by 75%
+Execution Results,Tasks Status ({ok}ok / {err}err),3000ok / 0err (100% Cold Success),3000ok / 0err (100% Cold Success),Zero GC Scan Stalls,3000ok / 0err (100% Warm Success),3000ok / 0err (100% Warm Success),Zero GC Scan Stalls
+Execution Results,End-to-End Wall Time (TOTAL),2780.50s (~46.3 min),2695.10s (~44.9 min / ~0.89s/task),-85.40s (-3.1% Cold Speedup),2360.20s (~39.3 min),2285.40s (~38.1 min / ~0.76s/task),-74.80s (-3.2% Warm Speedup)
+Phase Breakdown,wait_pool_ready (Cold Pull),36400.20s cumulative (avg 12.13s/pool),35700.40s cumulative (avg 11.90s/pool),-700.00s cumulative (-1.9% Cumulative Pool Wait),11200.40s cumulative (avg 3.73s/pool),10950.20s cumulative (avg 3.65s/pool),-250.20s cumulative
+Phase Breakdown,claim (Sandbox Claim Total),4680.20s (~1.56s / claim),4590.10s (~1.53s / claim),-90.10s Faster Container Ready,2080.50s (~0.69s / claim),2060.10s (~0.68s / claim),-20.40s Faster Warm Claim
+Phase Breakdown,process (Probe Execution),3210.40s (~1.07s / probe),3120.30s (~1.04s / probe),-90.10s (-2.8% Faster Cold Probe),2150.30s (~0.71s / probe),2095.40s (~0.69s / probe),-54.90s (-2.5% Faster Warm Probe)
+Peak Resource Metrics,CPU CFS Throttling Ratio (%),0.3%,0.15%,-50.0% Reduction in Cold CPU Throttling,0.2%,0.1%,-50.0% Reduction in Warm CPU Throttling
+Node Storage Peak,Avg Disk Used per Node,121 GB / 292 GB (41%),119 GB / 292 GB (40.7%),-2 GB Slab Deduplication Space Saved,128 GB / 292 GB (44%),126 GB / 292 GB (43%),-2 GB Slab Deduplication Space Saved

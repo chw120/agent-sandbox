@@ -30,7 +30,36 @@ from kubernetes import client, watch
 from . import constants
 from .config import TemplateSpec
 
+import random
+
 logger = logging.getLogger("agent_sandbox_rl.resources")
+
+
+def _call_with_retry(func, *args, max_retries: int = 10, initial_backoff: float = 0.5, **kwargs):
+  """Call a Kubernetes API method with exponential backoff on HTTP 429 (Too Many Requests)."""
+  backoff = initial_backoff
+  for attempt in range(max_retries):
+    try:
+      return func(*args, **kwargs)
+    except client.ApiException as e:
+      if e.status == 429 and attempt < max_retries - 1:
+        retry_after = 1.0
+        if e.headers:
+          raw_retry = e.headers.get("Retry-After") or e.headers.get("retry-after")
+          if raw_retry:
+            try:
+              retry_after = float(raw_retry)
+            except (ValueError, TypeError):
+              pass
+        sleep_time = max(retry_after, backoff) + random.uniform(0.1, 0.5)
+        logger.warning(
+            "K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in %.2fs (attempt %d/%d)...",
+            sleep_time, attempt + 1, max_retries
+        )
+        time.sleep(sleep_time)
+        backoff *= 2
+      else:
+        raise
 
 
 class Resources:
@@ -55,7 +84,8 @@ class Resources:
     against the CRD schema but not persisted.
     """
     try:
-      self.custom_api.get_namespaced_custom_object(
+      _call_with_retry(
+          self.custom_api.get_namespaced_custom_object,
           group=constants.GROUP, version=constants.VERSION,
           namespace=self.namespace, plural=constants.TEMPLATES_PLURAL,
           name=template_name)
@@ -66,7 +96,8 @@ class Resources:
         raise
 
     try:
-      self.custom_api.create_namespaced_custom_object(
+      _call_with_retry(
+          self.custom_api.create_namespaced_custom_object,
           group=constants.GROUP, version=constants.VERSION,
           namespace=self.namespace, plural=constants.TEMPLATES_PLURAL,
           body=self._template_manifest(image, template_name, template),
@@ -127,6 +158,15 @@ class Resources:
       if "affinity" in extra and "affinity" in pod_spec:
         merged_affinity = {**pod_spec["affinity"], **extra["affinity"]}
         extra = {**extra, "affinity": merged_affinity}
+      if "containers" in extra and "containers" in pod_spec and len(extra["containers"]) > 0:
+        orig_c = dict(pod_spec["containers"][0])
+        extra_c = dict(extra["containers"][0])
+        merged_c = {**orig_c, **extra_c}
+        # Keep original image if extra_c did not specify image
+        if "image" not in extra_c and "image" in orig_c:
+          merged_c["image"] = orig_c["image"]
+        pod_spec["containers"] = [merged_c] + extra["containers"][1:]
+        extra = {k: v for k, v in extra.items() if k != "containers"}
       pod_spec.update(extra)
 
     return {
@@ -178,12 +218,14 @@ class Resources:
     so a hot, repeatedly-reused size-1 pool isn't patched on every claim.
     ``dry_run=True`` sends ``dryRun=All`` and never patches (validation only)."""
     try:
-      self.custom_api.create_namespaced_custom_object(
+      _call_with_retry(
+          self.custom_api.create_namespaced_custom_object,
           group=constants.GROUP, version=constants.VERSION,
           namespace=self.namespace, plural=constants.WARMPOOLS_PLURAL,
           body=self._warmpool_manifest(name, template_name, replicas),
           dry_run="All" if dry_run else None)
       logger.info("Created SandboxWarmPool '%s' (replicas=%d)", name, replicas)
+      return
     except client.ApiException as e:
       if e.status != 409:
         raise
@@ -191,10 +233,12 @@ class Resources:
         logger.info("SandboxWarmPool '%s' already exists.", name)
         return
       logger.info("SandboxWarmPool '%s' exists; patching replicas=%d.", name, replicas)
-      self.custom_api.patch_namespaced_custom_object(
+      _call_with_retry(
+          self.custom_api.patch_namespaced_custom_object,
           group=constants.GROUP, version=constants.VERSION,
           namespace=self.namespace, plural=constants.WARMPOOLS_PLURAL,
           name=name, body={"spec": {"replicas": replicas}})
+      return
 
   def validate_manifests(self, sample_image: str, template: TemplateSpec,
                          *, name: str = "asrl-validate") -> None:
@@ -207,12 +251,14 @@ class Resources:
     catches that. Propagates ``ApiException`` on rejection; callers decide whether
     to warn or fail.
     """
-    self.custom_api.create_namespaced_custom_object(
+    _call_with_retry(
+        self.custom_api.create_namespaced_custom_object,
         group=constants.GROUP, version=constants.VERSION,
         namespace=self.namespace, plural=constants.TEMPLATES_PLURAL,
         body=self._template_manifest(sample_image, name, template),
         dry_run="All")
-    self.custom_api.create_namespaced_custom_object(
+    _call_with_retry(
+        self.custom_api.create_namespaced_custom_object,
         group=constants.GROUP, version=constants.VERSION,
         namespace=self.namespace, plural=constants.WARMPOOLS_PLURAL,
         body=self._warmpool_manifest(name, name, 1),
@@ -222,7 +268,8 @@ class Resources:
     self._delete(constants.WARMPOOLS_PLURAL, name, "SandboxWarmPool")
 
   def pool_ready_replicas(self, name: str) -> int:
-    obj = self.custom_api.get_namespaced_custom_object(
+    obj = _call_with_retry(
+        self.custom_api.get_namespaced_custom_object,
         group=constants.GROUP, version=constants.VERSION,
         namespace=self.namespace, plural=constants.WARMPOOLS_PLURAL, name=name)
     return int((obj.get("status") or {}).get("readyReplicas", 0) or 0)
@@ -315,14 +362,16 @@ class Resources:
 
   def _list(self, plural: str, label_selector: str | None) -> list[str]:
     kwargs = {"label_selector": label_selector} if label_selector else {}
-    objs = self.custom_api.list_namespaced_custom_object(
+    objs = _call_with_retry(
+        self.custom_api.list_namespaced_custom_object,
         group=constants.GROUP, version=constants.VERSION,
         namespace=self.namespace, plural=plural, **kwargs)
     return [o["metadata"]["name"] for o in objs.get("items", [])]
 
   def _delete(self, plural: str, name: str, kind: str) -> None:
     try:
-      self.custom_api.delete_namespaced_custom_object(
+      _call_with_retry(
+          self.custom_api.delete_namespaced_custom_object,
           group=constants.GROUP, version=constants.VERSION,
           namespace=self.namespace, plural=plural, name=name,
           body=client.V1DeleteOptions(grace_period_seconds=0))

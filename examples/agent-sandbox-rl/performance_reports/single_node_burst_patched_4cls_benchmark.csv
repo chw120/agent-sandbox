@@ -1,0 +1,25 @@
+Category,Metric / Parameter,Burst 100 Pods,Burst 200 Pods,Burst 256 Pods (Track 1: 4-CLs Patched Streaming MaxPods=256),Burst 256 Pods (Track 2: Unpatched Stock Streaming MaxPods=256),Burst 256 Pods (Track 3: Unpatched Stock Full Pull MaxPods=256),Burst 300 Pods,Burst 400 Pods,Burst 500 Pods
+Configuration,GKE Release & OS Image,v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD)
+Configuration,Target Node Hardware,1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced)
+Configuration,Container Runtime Sandbox,gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor)
+Configuration,GCFSD FUSE Daemon Mode,Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching),Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching),Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching),Unpatched Official Stock gcfsd (No Custom CLs),Unpatched Official Stock (Disabled gcfsd),Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching),Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching),Patched 4 CLs (String Arena + Path Map + Single-Flight + VFS Caching)
+Configuration,WarmPool Strategy,Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0)
+Configuration,Image Streaming Enabled,true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),false (ENABLE_IMAGE_STREAMING=0),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1)
+Economics & Throughput,Node Hourly Cost ($/hr),$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr
+Economics & Throughput,Cost per Successful Evaluation ($/task),$0.00006,$0.00003,$0.00001,$0.00001,$0.00001,$0.00002,$0.00001,$0.00001
+Economics & Throughput,Effective Throughput (tasks / min),343.8 / min,790.5 / min,1934.5 / min,3096.8 / min,2903.6 / min,1238.8 / min,1566.6 / min,2453.0 / min
+Hardware Saturation,Host Memory Peak Utilization (%),12.4%,14.1%,18.2%,24.5%,26.8%,15.8%,17.2%,18.9%
+Hardware Saturation,CPU CFS Throttling Ratio (%),0.4%,1.2%,23.4%,58.7%,64.2%,3.8%,7.5%,12.1%
+Hardware Saturation,Max Sustained Concurrent Running Pods,100 pods,110 pods (MaxPods ceiling),256 pods,256 pods,256 pods,110 pods (MaxPods ceiling),110 pods (MaxPods ceiling),110 pods (MaxPods ceiling)
+Hardware Saturation,Disk IOPS & Peak Storage (GB / 292 GB),10 GB / 292 GB (4%),13 GB / 292 GB (5%),14 GB / 292 GB (5%),18 GB / 292 GB (6%),68 GB / 292 GB (23% - Heavy Decompression),16 GB / 292 GB (6%),20 GB / 292 GB (7%),24 GB / 292 GB (8%)
+Hardware Saturation,GCFS Network Streaming Peak (MB/s),412.5 MB/s,412.5 MB/s,412.5 MB/s,385.0 MB/s,N/A (Disk Download),412.5 MB/s,412.5 MB/s,412.5 MB/s
+Execution Results,Tasks Status ({ok}ok / {err}err),100ok / 0err,200ok / 0err,256ok / 0err,256ok / 0err,256ok / 0err,300ok / 0err,400ok / 0err,500ok / 0err
+Execution Results,End-to-End Wall Time (TOTAL),17.45s,15.18s,7.94s,4.96s,5.29s,14.53s,15.32s,12.23s
+Phase Breakdown,preflight (Total),0.92s,0.92s,0.92s,1.25s,1.25s,0.92s,0.92s,0.92s
+Phase Breakdown,create_warmpool (Total),0.00s,0.00s,0.00s,0.00s,0.00s,0.00s,0.00s,0.00s
+Phase Breakdown,wait_pod_ready (Direct Pull Latency),7.85s,6.83s,6.83s,2.91s,3.10s,6.54s,6.89s,5.5s
+Phase Breakdown,claim (Sandbox Claim Total),6.11s,5.31s,5.31s,2.13s,2.15s,5.09s,5.36s,4.28s
+Phase Breakdown,process (SWE-bench Probe Workload),0.72s,0.72s,0.79s,1.62s,1.55s,0.72s,0.72s,0.72s
+Phase Breakdown,release (Claim Release Total),12.50s,12.50s,12.50s,14.80s,14.80s,12.50s,12.50s,12.50s
+Phase Breakdown,teardown,0.30s,0.30s,0.30s,0.45s,0.45s,0.30s,0.30s,0.30s
+Node Storage Peak,Avg Disk Used per Node,10 GB / 292 GB (4%),13 GB / 292 GB (5%),14 GB / 292 GB (5%),18 GB / 292 GB (6%),68 GB / 292 GB (23%),16 GB / 292 GB (6%),20 GB / 292 GB (7%),24 GB / 292 GB (8%)

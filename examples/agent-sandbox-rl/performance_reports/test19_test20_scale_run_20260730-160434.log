@@ -1,0 +1,703 @@
+=== [PRE-FLIGHT] Verifying Cluster Context & Node Health ===
+[EXEC] kubectl config current-context
+  -> Current Context: gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster
+[EXEC] kubectl get nodes -l cloud.google.com/gke-nodepool=gvisor-scale-pool-32 --no-headers 2>/dev/null || echo ''
+  -> Nodes found in pool (cloud.google.com/gke-nodepool=gvisor-scale-pool-32): 10 nodes
+[EXEC] kubectl get deployment agent-sandbox-controller -n agent-sandbox-system --no-headers 2>/dev/null || echo ''
+  -> Controller Status: agent-sandbox-controller   1/1   1     1     2d13h
+
+=== [CLEANUP] Purging all resources in namespace 'default' ===
+[EXEC] kubectl get sandboxes.agents.x-k8s.io,sandboxclaims.extensions.agents.x-k8s.io,sandboxtemplates.extensions.agents.x-k8s.io,sandboxwarmpools.extensions.agents.x-k8s.io -n default -o name 2>/dev/null | xargs -r -P 50 -I {} kubectl patch {} -n default -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null || true
+[EXEC] kubectl delete sandboxes,sandboxclaims,sandboxtemplates,sandboxwarmpools,pods --all -n default --grace-period=0 --force 2>/dev/null || true
+No resources found
+[CLEANUP] Namespace 'default' is 100% clean.
+
+
+====================================================================================================
+=== [STEP 1] EXECUTING TEST CASE 19: COLD START 3,000 TASKS (6 CLs + SBD + CoW) ===
+====================================================================================================
+
+sweep: 1 variant(s) = ['pipelined']
+[pipelined] 500 images x 6 = 3000 tasks; conc=500 cpu=125m mem=1Gi cow=True
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.18s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.44s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.14s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.23s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.49s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.30s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.29s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.43s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.15s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.20s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.40s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.45s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.42s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.45s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.22s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.18s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.32s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.21s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.40s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.39s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.48s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.40s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.45s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.34s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.28s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.22s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.26s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.22s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.45s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.30s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.18s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.18s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.31s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.15s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.46s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.46s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.14s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 5.38s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.23s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.44s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.23s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.27s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.40s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.23s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.46s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.11s (attempt 1/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.18s (attempt 2/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.23s (attempt 2/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.27s (attempt 2/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.21s (attempt 2/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.34s (attempt 2/10)...
+K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 10.38s (attempt 2/10)...
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a5e4a6c1-12a7-48ca-ae0b-c760cebe4931', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12125-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'cbabad0f-eebd-4f6f-8bf5-d9df63ef5fc7', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12262-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '3f100644-4b8d-407b-a816-8ef95e6dc1cb', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12125-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '89ad5101-e06d-4888-94b5-1a830145c4ab', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '7fe27619-2f9a-4e5e-b084-058ca0c140ca', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12262-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'f5acaaee-ccf2-4d62-81e8-69f78a634e26', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '63f532ad-1a4b-403e-9f86-10d650a0af71', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'b9bd0243-1bbe-4db6-b0a7-c8af29cdc723', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '3ef35905-55a9-44a1-8a35-47dc704ca7a3', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '5ca0792a-be8f-43cf-8949-f43e86d428f8', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '174afdbd-54de-4512-aa72-2f699c8cb961', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '293c6858-dc31-4756-9aa4-28a21c8caf80', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'f432fd0c-b4c4-44f1-aabd-c74a38c19fd8', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '5c4c3894-c80c-480b-a2d0-3aa884e27ee7', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'fbc14641-227c-4a9c-8ff0-f4562d6a91f1', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a61ea2c2-9fcc-4784-a01e-9dfab3a88ef9', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a2aa977b-179e-43cc-be08-bc520c295d3a', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '8ae8871b-88fb-4461-9d07-f7356f6d9bdb', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '463dd428-30c0-4a16-8997-de61fe13a869', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12304-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '4cbaaae4-31f6-4a22-b238-4239d097dc87', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '53c96f4d-b762-486f-801e-c86a69bddca8', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '8c5e9dea-9366-4189-9202-5d342e25a35c', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12276-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'ac02b15d-8102-45eb-b18a-57ee86234b55', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12209-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '5086f3dd-49d8-459d-97df-a0cd48bebcb5', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12155-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '266925b7-07e9-4f5e-bb06-51290299ae28', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12262-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '70ac9bc0-a0b7-4b1a-96cf-16c1be54a758', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12050-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '1b54d948-9463-4455-aec1-4fc965c721f6', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '3a28aa3f-34b6-41cb-be1d-4fadb2fd30e9', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '6ab66493-2709-449a-bef9-d1e15de693c9', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'fa7f5795-1eab-4e79-9b65-308ed58906b3', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12143-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'b05def51-b71d-498c-b6f6-b154b21ec130', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12155-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '52b34ea7-a2b2-4ff2-81d5-51c356708e74', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'e2c1557f-696a-49d0-a905-362015a04b45', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12143-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'd69680f7-5c5a-4df7-a87f-a57fa42a7d6b', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12209-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'e79c11b3-43f0-4366-94e0-dac57ef111ba', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12143-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'de9a5687-6d94-4fa3-ad02-cba922eaded2', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '248e7f9a-3ff2-4ce6-9259-035901bb1a97', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a94b2370-4c5b-45aa-8729-a1eb7d569608', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12209-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '8a9f7f43-e00b-4ead-9194-1fb98b7f78c0', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'c4226b2a-f030-448c-98ce-5641481b9bc7', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '5a5a83d5-c2d9-4718-bfd4-17a5617667eb', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12209-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '4d292d6f-6678-4e77-ac5f-e88a5056260a', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12193-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'aebdf9fe-6e0c-4df1-96b8-2516b8d3e3b9', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12209-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '9ed2fc35-8428-44cc-90dc-9f188311eb0d', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12155-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '990682cc-e389-4d00-b2ee-ba83cf3c9b17', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12125-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'ebfceb8b-4288-499a-89a3-07e842606504', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'e01f920e-c18e-4cb8-ac8f-08e2c70a8a9c', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '0c6d5549-f3ac-4bc1-900f-e8e97bbd7539', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '2d5750f3-20b9-47fa-88a8-80f36d347a2c', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12273-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'd4905bc1-415f-430d-9503-54c84764e497', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '483a5238-8a29-4c61-85d2-0f73952548ca', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'd2d1e370-9f41-4c40-9184-4015b8386ac1', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a0cef723-48e7-42a0-9678-1cdf9b316f94', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '0109792b-0a60-4af7-a671-4edfb911b6e9', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r3 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'f8ebf08e-5841-45fc-ae75-951a1494766d', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': 'a61ed772-960c-48fa-9d24-ffed1652e846', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12419-r1 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '2d616663-0790-4d6e-86ea-0dd91e6ad56d', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12406-r0 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '43f2e460-31a9-4ffe-a8e0-1b4de077f5f1', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r2 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '4826f583-250c-4101-a420-b20d1ee0892c', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12325-r5 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '006355bd-0bfa-474a-9177-3fa0013b4b52', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-12308-r4 failed: (429)
+Reason: Too Many Requests
+HTTP response headers: HTTPHeaderDict({'Audit-Id': '6d6de773-42c4-469c-a710-5a96ebe59a22', 'Cache-Control': 'no-cache, private', 'Content-Type': 'text/plain; charset=utf-8', 'Retry-After': '9', 'X-Content-Type-Options': 'nosniff', 'X-Kubernetes-Pf-Flowschema-Uid': 'ee06bedd-3153-4d32-aa0a-97294c8f708d', 'X-Kubernetes-Pf-Prioritylevel-Uid': '251ebc88-c5e8-4d23-9ae7-ee247e340703', 'Date': 'Thu, 30 Jul 2026 16:06:14 GMT', 'Content-Length': '43'})
+HTTP response body: Too many requests, please try again later.
+
+
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<HTTPSConnection(host='34.57.182.63', port=443) at 0x7ff1ac6674d0>, 'Connection to 34.57.182.63 timed out. (connect timeout=None)')': /apis/agents.x-k8s.io/v1beta1/namespaces/default/sandboxes/sandbox-claim-5a644145
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.astropy__astropy-13453-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-4448b55d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.astropy__astropy-7606-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-bccb9775' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.astropy__astropy-8707-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-2c921e8b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-10999-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-594199c8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-11087-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-2dbdaeed' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-10914-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-7ae98a82' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13410-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-ea87100e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13512-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-7bda3687' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13516-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-8fac932c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13551-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-775e47d2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13821-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-a3b14b86' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13933-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-6e313024' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-13933-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-0f6e056f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14034-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-3153b0e8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14089-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-f2bad66d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14349-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-d954e6d4' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14315-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-bf7ab139' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14376-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-b1adc699' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14404-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-602a144d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14404-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-03473901' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14631-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-9a26fdd3' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14608-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-675d4767' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14631-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-2f74a3ba' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14539-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-851fad79' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14580-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-9183efe8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14725-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-1fec125d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14752-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-af13abde' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14765-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-9f0e02dd' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14765-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-1c873e8e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14771-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-b0bbb945' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14771-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-a233b65c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14787-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-8fa865f2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-14792-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-244f66ed' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15098-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-1e5d4706' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15499-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-90c4e838' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15525-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-f562e6fd' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15525-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-ce30b147' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15554-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-d145d809' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15554-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-ca2a4b0c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15554-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-f5ada514' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15561-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-8d062da0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15561-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-c4e985c0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15561-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-0a06cb3a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15561-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-19b54a07' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15563-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-f6e33605' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15563-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-43b57772' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15563-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-dd9bd155' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15569-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-2f9fe629' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15569-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-b647d499' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15572-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-ea7c1a3a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15629-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-f5677545' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15695-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-338d192c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15731-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-41e6d881' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15851-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-fd1ac23f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15741-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-92dac353' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15851-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-e5a7afc6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15741-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-62672cf8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16032-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-4ccafc19' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15741-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-aaaf10fb' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16116-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-16ac28e9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15987-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-a18a0f73' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15916-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-9996283d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15957-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-928087c1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15957-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-0b60d946' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15957-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-a90b685b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15973-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-1cfff5f5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16032-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-810afd49' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15987-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-eff72b86' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16082-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-a9c36918' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16082-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-b4cbe97c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16136-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-d73b7d93' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16139-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-ac830e18' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16116-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-881802e6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16136-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-ea89b2e3' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16145-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-23d143b6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16145-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-4888d282' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16255-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-d68bb89d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16256-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-165d3b82' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16256-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-1dcc0fd2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16263-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-db1b599e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16256-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-a7d9b02e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16263-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-1ef06c6c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16263-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-045ed690' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16315-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-69a676ae' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16315-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-008d839f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16333-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-d120d5f4' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16429-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-d3008b60' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16333-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-375f94e9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16454-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-42878301' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16429-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-75042b96' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16429-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-221b4172' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16429-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-226b792d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16485-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-4f11ce2a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16485-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-fa02cef5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16485-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-8e3cc249' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16454-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-989c54f6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16485-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-2f579c5f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16493-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-0fe589b8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16502-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-be794657' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16502-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-e5b34b68' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16527-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-d0b30bb1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16527-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-b5ed7ae0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16560-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-2661878f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16569-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-0d4256a9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16569-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-5463e78a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16569-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-d3793d8e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16595-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-38762489' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16595-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-8fce6d5e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16877-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-cbc27ff6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16950-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-681278f2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16901-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-05d1e4f9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-16819-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-f4bfbe62' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-7530-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-642e4fea' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-17084-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-9461d14a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-17084-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-b4232de0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-7530-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-1f1d257e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-7530-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-be2ea50b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-17087-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-83c69046' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-17084-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-9eb29ff3' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-14-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-b5c0e4f4' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-14-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-4e44a982' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-14-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-c91f0c4b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-20-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-fb34703a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-17084-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-db56f85c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-20-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-9f36a061' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-20-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-ff4ef97c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-20-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-c83ce47d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-20-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-1b6aba6d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-21-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-4a2d5fd9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-21-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-454a8076' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-22-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-39456cad' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-22-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-85c3e85c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-3e3dbd97' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-faa26de2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-0652c22f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-859b9751' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-02141f84' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-b000ae96' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-2320022d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-23-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-54f45640' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-b421c83a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-cdd4ada4' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-2ea67896' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-740929f6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-dce180f0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-7ffa3816' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-d6ef27db' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-cf4e0d76' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-1a33e1f1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-58ea1b1e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-24-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-9a0f34a1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-e9b61992' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-4fcd25dd' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-6b70e2de' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-f33e1c97' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-c2f18f79' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-1edc117f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-01529dd1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-1bd5c43a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-fc0ca3f3' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-05ac9d1d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-25-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-03b3478d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-6a24551d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-056fb259' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-a0379686' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-53444acf' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-66f958ae' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-349c6c10' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-9488ccd6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-7d280bd2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-eb2123c5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.matplotlib__matplotlib-26-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-1deb8f36' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3069-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-3b6c9cfe' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3069-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-3f68b464' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3069-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-6f02fbcb' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3069-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-9b6d7de8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3187-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-1ee317b2' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3187-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-832d140f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3187-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-b6303584' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.mwaskom__seaborn-3187-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-2bec3693' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pallets__flask-5014-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-b0ca146c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pallets__flask-5014-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-874913fd' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pallets__flask-5014-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-03388996' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-1142-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-689bd822' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-1142-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-014d7293' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-1921-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-aba25126' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-1921-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-7b555ab0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-2931-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-4317f40d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-5414-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-82b4cb35' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-6028-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-ed35e6f1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-6028-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-9ff9c0f7' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.psf__requests-6028-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-29d2a051' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-2905-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-ba242401' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3095-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-6005c998' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3095-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-773fe36f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3151-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-639bd363' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-2905-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-7dc20626' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3305-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-972b14d1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3151-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-bc25a328' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3151-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-9fd3f04e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4094-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-5b1bbf83' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3677-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-f4b51f8a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3677-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-5b5024ba' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4094-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-42de433e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3305-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-a2821e75' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3305-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-8bb892bb' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3095-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-ffee3981' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3677-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-7e5876ef' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3993-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-085a7aa5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3993-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-8d895d05' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4356-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-203e4a2d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4094-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-1cc63ba7' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4356-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-6827ba2b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3095-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-622e6f8d' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4094-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-6924a243' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3993-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-90b9bd8f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4356-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-f7ef1b17' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4075-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-9e42e9b5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4629-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-3e5b7498' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-3151-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-581840fa' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4356-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-179be6ec' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4075-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-fe5c858b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4075-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-28c9c117' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4629-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-2515aef9' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4629-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-a76cf054' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4629-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-43905da0' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4687-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-a19a8310' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4687-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-6f8fe9d1' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4687-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-7a6478e8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4687-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-e8aa5161' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4695-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-ccee75e3' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4695-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-809da49b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4695-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-5a7d1f24' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4966-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-de2bfd44' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4966-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-cf32fb6f' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-4966-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-961c471b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6461-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-c3efa087' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6461-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-7b15c405' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6461-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-d9512176' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6461-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-e05f48fd' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6599-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-3227fd87' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6599-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-dad41382' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6599-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-52a33bd6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6721-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-b0e2faed' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6721-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-598368b5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6721-r5 failed: Could not resolve claim readiness from claim 'sandbox-claim-9b3a0deb' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6721-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-d9447058' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6744-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-c3ef3a8e' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6744-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-bfd466f5' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6938-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-5c9b8c81' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6938-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-ee776f31' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6938-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-67896836' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-6992-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-536f92f8' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pydata__xarray-7233-r0 failed: Could not resolve claim readiness from claim 'sandbox-claim-dfda625b' within 900 seconds.
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<HTTPSConnection(host='34.57.182.63', port=443) at 0x7ff1ac357890>, 'Connection to 34.57.182.63 timed out. (connect timeout=None)')': /apis/agents.x-k8s.io/v1beta1/namespaces/default/sandboxes/sandbox-claim-9e4e02c4
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pylint-dev__pylint-7080-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-7978221c' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pylint-dev__pylint-7080-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-db1ba08b' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-d56f5783' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-b6f65c99' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r4 failed: Could not resolve claim readiness from claim 'sandbox-claim-791e2341' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r2 failed: Could not resolve claim readiness from claim 'sandbox-claim-46f3c8b6' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r3 failed: Could not resolve claim readiness from claim 'sandbox-claim-4ef3255a' within 900 seconds.
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r1 failed: Could not resolve claim readiness from claim 'sandbox-claim-e94cedec' within 900 seconds.

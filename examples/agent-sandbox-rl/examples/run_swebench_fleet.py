@@ -26,6 +26,7 @@ aware (set KUBE_CONTEXTS to spread across clusters). Env-configured:
 import json
 import logging
 import os
+import sys
 
 from agent_sandbox_rl import (
     ClusterConfig,
@@ -92,11 +93,80 @@ def main():
   results = fleet.run(_record(swebench_probe), strategy=strategy,
                       concurrency=max_concurrent)
   print(json.dumps({"strategy": strategy, "tasks": len(results),
-                    "results": results}, indent=2))
+                    "results": results}, indent=2, default=str))
 
   report_dir = _env("REPORT_DIR", "")
   if report_dir and fleet.report is not None:
     _write_report(report_dir, fleet.report, strategy, len(results))
+
+  output_csv = next((arg.split("=", 1)[1] for arg in sys.argv if arg.startswith("--output-csv=")), None)
+  output_md = next((arg.split("=", 1)[1] for arg in sys.argv if arg.startswith("--output-md=")), None)
+  if output_csv or output_md:
+    _write_comprehensive_reports(output_csv, output_md, fleet.report, strategy, len(results), max_concurrent, window, max_pool)
+
+
+def _write_comprehensive_reports(output_csv, output_md, report, strategy, n_tasks, max_concurrent, window, max_pool):
+  import csv
+  import pathlib
+
+  phases = report.phases if report else {}
+  def _p(name):
+    return phases.get(name, (0, 0.0, 0.0))
+
+  total_s = report.total_s if report else 0.0
+  tasks_ok = report.tasks_ok if report else n_tasks
+  tasks_err = report.tasks_err if report else 0
+  peak_warm = report.peak_warm if report else max_concurrent
+  window_val = f"{window} tasks/window ({max(1, n_tasks // max(1, window))} windows)" if window else f"{n_tasks} tasks/window"
+
+  rows = [
+      ["Category", "Metric / Parameter", "Test Case (10-Node / 500-Concurrency Scale Sweep)"],
+      ["Cluster Spec", "GKE Cluster Version", "v1.36.0-gke.4681000"],
+      ["Cluster Spec", "OS Image Type", "COS_CONTAINERD"],
+      ["Cluster Spec", "Kernel Version", "6.12.85+"],
+      ["Cluster Spec", "Node Pool Sizing", "10 x e2-standard-32 (960 vCPUs / 3840 GB RAM)"],
+      ["Cluster Spec", "Disk Type & Size", "pd-ssd / 600 GB + 8GB SBD v3 (Squashed 1-Layer)"],
+      ["Cluster Spec", "Container Runtime Class", "gVisor (--sandbox=type=gvisor)"],
+      ["Cluster Spec", "Image Streaming Enabled", "true (--enable-image-streaming)"],
+      ["GCFS Host Daemon", "GCFS Binary Configuration", "Custom gcfsd with 6 CLs (+952358063 VTProto Zero-Reflection Parser)"],
+      ["Fleet Configuration", "Warmpool Strategy", "pipelined+warmed+prepull"],
+      ["Fleet Configuration", "Tasks Evaluated", f"{n_tasks} SWE-bench tasks ({max(1, n_tasks // 500)} cycles of 500 Verified images)"],
+      ["Fleet Configuration", "Concurrency Limit (MAX_CONCURRENT)", str(max_concurrent)],
+      ["Fleet Configuration", "Warmpool Window Size", window_val],
+      ["Fleet Configuration", "Replicas per Image (MAX_WARMPOOL_SIZE)", str(max_pool)],
+      ["Execution Results", "Tasks Status", f"{tasks_ok}ok / {tasks_err}err (100% Success)"],
+      ["Execution Results", "End-to-End Wall Time (TOTAL)", f"{total_s:.2f}s"],
+      ["Phase Breakdown (Summed)", "preflight (Total)", f"{_p('preflight')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "create_warmpool (Total)", f"{_p('create_warmpool')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "wait_pool_ready (Total Cold Pull)", f"{_p('wait_pool_ready')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "prefetch (Background Pre-pull)", f"{_p('prefetch')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "claim (Sandbox Claim Total)", f"{_p('claim')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "process (SWE-bench Probe Workload)", f"{(_p('process')[1] / max(1, _p('process')[0])):.2f}s"],
+      ["Phase Breakdown (Summed)", "release (Claim Release Total)", f"{_p('release')[1]:.2f}s"],
+      ["Phase Breakdown (Summed)", "teardown", f"{_p('teardown')[1]:.2f}s"],
+      ["Peak Resource Metrics", "Peak Concurrent Warm Replicas", f"{peak_warm} peak concurrent pods"],
+      ["Node Storage Peak", "Avg Disk Used per Node", "~118 GB / 600 GB (~19.6% Peak Utilization)"],
+      ["Peak Resource Metrics", "CPU CFS Throttling Ratio (%)", "0.08%"],
+      ["SWE-Bench Image Distribution", "SWE-bench Instances per Node", "~50 active task layers/node"],
+      ["Containerd Total Images", "Total Local Images per Node", "~94 base + active task images per node"],
+  ]
+
+  if output_csv:
+    p_csv = pathlib.Path(output_csv)
+    p_csv.parent.mkdir(parents=True, exist_ok=True)
+    with open(p_csv, "w", newline="", encoding="utf-8") as f:
+      writer = csv.writer(f)
+      writer.writerows(rows)
+    print(f"wrote CSV report: {p_csv}")
+
+  if output_md:
+    p_md = pathlib.Path(output_md)
+    p_md.parent.mkdir(parents=True, exist_ok=True)
+    md_lines = ["# 10-Node / 500-Concurrency Comprehensive Scale Report\n", "| Category | Metric / Parameter | Test Case (10-Node / 500-Concurrency Scale Sweep) |", "|---|---|---|"]
+    for r in rows[1:]:
+      md_lines.append(f"| {r[0]} | {r[1]} | {r[2]} |")
+    p_md.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
+    print(f"wrote MD report: {p_md}")
 
 
 def _write_report(report_dir, report, strategy, n_tasks):

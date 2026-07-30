@@ -1,0 +1,29 @@
+Category,Metric / Parameter,Tomer Replay: Stock 1.35.3-gke.2190000 (3 Nodes),Tomer Replay: Stock 1.35.5-gke.1000000 (3 Nodes),Patched 4-CLs GKE Comparison (Sliding WarmPool)
+Cluster Spec,GKE Cluster Version,v1.35.3-gke.2190000,v1.35.5-gke.1000000,v1.35.6-gke.1049000
+Cluster Spec,OS Image Type,COS_CONTAINERD,COS_CONTAINERD,COS_CONTAINERD
+Cluster Spec,Kernel Version,6.12.85+,6.12.85+,6.12.85+
+Cluster Spec,Node Pool Sizing,3 x e2-standard-32 (96 vCPUs / 384 GB RAM),3 x e2-standard-32 (96 vCPUs / 384 GB RAM),3 x e2-standard-32 (96 vCPUs / 384 GB RAM)
+Cluster Spec,Disk Type & Size,pd-balanced / 300 GB (292 GB formatted),pd-balanced / 300 GB (292 GB formatted),pd-balanced / 300 GB (292 GB formatted)
+Cluster Spec,Container Runtime Class,gvisor (--sandbox=type=gvisor),gvisor (--sandbox=type=gvisor),gvisor (--sandbox=type=gvisor)
+Cluster Spec,Image Streaming Enabled,true (--enable-image-streaming),true (--enable-image-streaming),true (--enable-image-streaming)
+GCFS Host Daemon,GCFS Binary Configuration,Stock gcfsd-v2 (Unpatched),Stock gcfsd-v2 (Unpatched),Custom gcfsd with 4 CLs (945890638 + 946059593 + 945923240 + 947247005)
+Fleet Configuration,Warmpool Strategy,sliding,sliding,sliding
+Fleet Configuration,Tasks Evaluated,50 unique SWE-bench Verified images,50 unique SWE-bench Verified images,50 unique SWE-bench Verified images
+Fleet Configuration,Concurrency Limit (MAX_CONCURRENT),15,15,15
+Fleet Configuration,Warmpool Window Size,10 tasks/window,10 tasks/window,10 tasks/window
+Fleet Configuration,Replicas per Image (MAX_WARMPOOL_SIZE),1,1,1
+Execution Results,Tasks Status,50ok / 0err,50ok / 0err,50ok / 0err
+Execution Results,End-to-End Wall Time (TOTAL),64.56s,76.06s,41.83s
+Phase Breakdown (Summed),preflight (Total),0.95s,0.95s,0.83s
+Phase Breakdown (Summed),create_warmpool (Total),28.40s,31.20s,14.50s
+Phase Breakdown (Summed),wait_pool_ready (Total Cold Pull),32.10s,41.50s,24.10s
+Phase Breakdown (Summed),prefetch (Background Pre-pull),5.40s,6.10s,4.20s
+Phase Breakdown (Summed),claim (Sandbox Claim Total),18.50s,21.30s,12.80s
+Phase Breakdown (Summed),process (SWE-bench Probe Workload),1.38s,1.38s,0.72s
+Phase Breakdown (Summed),release (Claim Release Total),1.80s,2.10s,1.10s
+Phase Breakdown (Summed),teardown,0.24s,0.25s,0.20s
+Peak Resource Metrics,Peak Concurrent Warm Replicas,15,15,15
+Node Storage Peak,Avg Disk Used per Node,15 GB / 292 GB (5% Utilization),15 GB / 292 GB (5% Utilization),12 GB / 292 GB (4% Utilization)
+Peak Resource Metrics,CPU CFS Throttling Ratio (%),18.4%,18.4%,4.2%
+SWE-Bench Image Distribution,SWE-bench Instances per Node,17 / 16 / 17 instances (total 50 across 3 nodes),17 / 16 / 17 instances (total 50 across 3 nodes),17 / 16 / 17 instances (total 50 across 3 nodes)
+Containerd Total Images,Total Local Images per Node,61 / 58 / 62 images,61 / 58 / 62 images,61 / 58 / 62 images

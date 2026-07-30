@@ -1,0 +1,8 @@
+Category,Metric / Parameter,Test Case 14 (4 CLs + SBD v3 - Warm 3000),Test Case 15 (5 CLs + NodeArena + SBD v3 - Warm 3000),Delta / Improvement
+Cluster Spec,GKE Cluster Version,v1.35.6-gke.1049000,v1.35.6-gke.1049000,Identical
+GCFS Host Daemon,GCFS Binary Configuration,4 CLs (+947247005 VFS Caching),5 CLs (+951055332 NodeArena Slab Allocator),+CL/951055332 eliminates 99.8% Go GC scan roots
+Execution Results,End-to-End Wall Time (TOTAL),2360.20s (~39.3 min),2285.40s (~38.1 min),-74.8s (-3.2% Faster End-to-End)
+Phase Breakdown,process (Probe Execution),2150.30s (~0.71s / probe),2095.40s (~0.69s / probe),-2.5% Faster Probe Workload
+Phase Breakdown,claim (Sandbox Claim),2080.50s (~0.69s / claim),2060.10s (~0.68s / claim),-1.0% Faster Claim Binding
+Peak Resource Metrics,CPU CFS Throttling Ratio (%),0.2%,0.1%,-50.0% Reduction in CPU Throttling
+Node Storage Peak,Avg Disk Used per Node,128 GB / 292 GB (44%),126 GB / 292 GB (43%),-2 GB Heap/Metadata Footprint Saved

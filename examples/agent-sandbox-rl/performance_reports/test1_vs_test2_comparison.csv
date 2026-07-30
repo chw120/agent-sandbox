@@ -1,0 +1,26 @@
+Category,Metric / Parameter,Test Case 1 (GKE 1.35.5 Baseline),Test Case 2 (GKE 1.35.6 Baseline),Delta / Comparison
+Cluster Spec,GKE Cluster Version,v1.35.5-gke.1241004,v1.35.6-gke.1049000,GKE Minor Patch Upgrade
+Cluster Spec,OS Image Type,COS_CONTAINERD,COS_CONTAINERD,Identical
+Cluster Spec,Kernel Version,6.12.85+,6.12.85+,Identical
+Cluster Spec,Node Pool Sizing,3 x e2-standard-32 (96 vCPUs / 384 GB RAM),3 x e2-standard-32 (96 vCPUs / 384 GB RAM),Identical
+Cluster Spec,Disk Type & Size,pd-balanced / 300 GB (292 GB formatted),pd-balanced / 300 GB (292 GB formatted),Identical
+Cluster Spec,Container Runtime Class,gvisor (--sandbox=type=gvisor),gvisor (--sandbox=type=gvisor),Identical
+Cluster Spec,Image Streaming Enabled,true (--enable-image-streaming),true (--enable-image-streaming),Identical
+GCFS Host Daemon,GCFS Binary Configuration,Stock gcfsd-v2 (Unpatched / 52 MiB cache / GOGC=10),Stock gcfsd-v2 (Unpatched / 52 MiB cache / GOGC=10),Identical Baseline
+Fleet Configuration,Warmpool Strategy,pipelined,pipelined,Identical
+Fleet Configuration,Tasks Evaluated,50 unique SWE-bench Verified images,50 unique SWE-bench Verified images,Identical
+Fleet Configuration,Concurrency Limit (MAX_CONCURRENT),15,15,Identical
+Fleet Configuration,Warmpool Window Size,10 tasks/window (5 windows),10 tasks/window (5 windows),Identical
+Fleet Configuration,Replicas per Image (MAX_WARMPOOL_SIZE),1,1,Identical
+Execution Results,Tasks Status,50ok / 0err,50ok / 0err,100% Success in both
+Execution Results,End-to-End Wall Time (TOTAL),80.40s,87.16s,+6.76s (+8.4%)
+Phase Breakdown (Summed),preflight (Total),0.91s,1.54s,+0.63s
+Phase Breakdown (Summed),create_warmpool (Total),34.16s,31.60s,-2.56s
+Phase Breakdown (Summed),wait_pool_ready (Total Cold Pull),525.10s,527.60s,+2.50s (+0.47%)
+Phase Breakdown (Summed),prefetch (Background Pre-pull),66.93s,68.59s,+1.66s
+Phase Breakdown (Summed),claim (Sandbox Claim Total),96.04s,89.02s,-7.02s (-7.3%)
+Phase Breakdown (Summed),process (SWE-bench Probe Workload),82.98s,82.19s,-0.79s (-0.95%)
+Phase Breakdown (Summed),release (Claim Release Total),11.39s,12.52s,+1.13s
+Phase Breakdown (Summed),teardown,0.22s,0.24s,+0.02s
+Peak Resource Metrics,Peak Concurrent Warm Replicas,20,20,Identical
+Node Storage Peak,Avg Disk Used per Node,N/A,19 GB / 292 GB (7% Utilization),N/A

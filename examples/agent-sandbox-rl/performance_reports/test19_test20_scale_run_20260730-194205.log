@@ -1,0 +1,377 @@
+=== [PRE-FLIGHT] Verifying Cluster Context & Node Health ===
+[EXEC] kubectl config current-context
+  -> Current Context: kind-kind
+  -> Switching context to: gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster
+[EXEC] kubectl config use-context gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster
+Switched to context "gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster".
+[EXEC] kubectl get nodes -l cloud.google.com/gke-nodepool=gvisor-scale-pool-32 --no-headers 2>/dev/null || echo ''
+  -> Nodes found in pool (cloud.google.com/gke-nodepool=gvisor-scale-pool-32): 10 nodes
+[EXEC] kubectl get deployment agent-sandbox-controller -n agent-sandbox-system --no-headers 2>/dev/null || echo ''
+  -> Controller Status: agent-sandbox-controller   1/1   1     1     2d17h
+
+=== [CLEANUP] Purging all resources in namespace 'default' ===
+[EXEC] kubectl get sandboxes.agents.x-k8s.io,sandboxclaims.extensions.agents.x-k8s.io,sandboxtemplates.extensions.agents.x-k8s.io,sandboxwarmpools.extensions.agents.x-k8s.io -n default -o name 2>/dev/null | xargs -r -P 50 -I {} kubectl patch {} -n default -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null || true
+sandbox.agents.x-k8s.io/pool-r2e-img-6cd0e0033c13-qfxmw patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-587e5af3ed48-fv677 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-a5d57baea12b-4xgs8 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-1ed8cb091cf1-97vr4 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-480757258235-xgrk9 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-174418623895-qr4bf patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-01def05241b5-w8r2p patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-4c0d8a3a9b00-fpq9j patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-62337e6f0e9d-2l76x patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-1fcff7b111bb-6599c patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-611e6b3abd47-qcwd6 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-ec7464c7156e-9fswl patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-58a809a540f2-fwc86 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-659fa12bc32e-njtrz patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-4ad78ab247ed-hvw6q patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-221bd037c5a6-tfr4g patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-40bcfd56a4a4-v7c4f patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-e495aee34002-dmbjp patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-7eee479dc13a-449lm patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-8a86815ffc6e-zxzjn patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-f07a214f4776-vqnxs patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-47dd5a3794bc-mq2r4 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-c95d64bfd24b-82s9b patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-793c70b5ce63-vrd75 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-b84fa42f9699-zqwtg patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-34af69e9accf-fw6n5 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-2ef11ecfc078-vjw24 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-67f620ef10cb-spssf patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-fd017999de4a-lvkxk patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-7c31f9147faf-4jbr2 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-8c7edf74fe04-n87hz patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-9aa59aa7fe3f-nht27 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-a8d0235275f3-267cf patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-9e32682fa603-lnlwb patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-9a8c26eb205a-dn6x2 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-da644ad622ad-ns2w8 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-d204ee21ac90-s45p5 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-bccb33567685-m7j86 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-d4ce1e676562-lmgh4 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-c31c64a67b22-2vh4g patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-45174c8df35d-wwx9p patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-c9ee6641e816-br7b7 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-ef96bb14bee4-5vhgx patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-c6efd2f46708-q27bm patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-acd5f3d2d61b-qrf29 patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-d82191248be6-8rltl patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-e679029c6da3-q8jpd patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-c09f9ff8be21-v57bw patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-d2ce934f153d-4qx5d patched (no change)
+sandbox.agents.x-k8s.io/pool-r2e-img-f815e4f8cb0a-r5nsz patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-221bd037c5a6 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-1ed8cb091cf1 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-01def05241b5 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-480757258235 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-2ef11ecfc078 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-611e6b3abd47 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-45174c8df35d patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-58a809a540f2 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-587e5af3ed48 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-4c0d8a3a9b00 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-8c7edf74fe04 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-9e32682fa603 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-1fcff7b111bb patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-659fa12bc32e patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-c95d64bfd24b patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-9a8c26eb205a patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-62337e6f0e9d patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-67f620ef10cb patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-acd5f3d2d61b patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-c9ee6641e816 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-c09f9ff8be21 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-7c31f9147faf patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-47dd5a3794bc patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-9aa59aa7fe3f patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-34af69e9accf patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-c6efd2f46708 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-174418623895 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-4ad78ab247ed patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-a8d0235275f3 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-7eee479dc13a patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-6cd0e0033c13 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-40bcfd56a4a4 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-793c70b5ce63 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-c31c64a67b22 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-d204ee21ac90 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-fd017999de4a patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-d4ce1e676562 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-ef96bb14bee4 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-b84fa42f9699 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-da644ad622ad patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-a5d57baea12b patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-bccb33567685 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-d2ce934f153d patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-e495aee34002 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-f815e4f8cb0a patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-d82191248be6 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-e679029c6da3 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-01def05241b5 patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-8a86815ffc6e patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-ec7464c7156e patched (no change)
+sandboxtemplate.extensions.agents.x-k8s.io/r2e-img-f07a214f4776 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-221bd037c5a6 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-174418623895 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-2ef11ecfc078 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-4c0d8a3a9b00 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-1ed8cb091cf1 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-1fcff7b111bb patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-611e6b3abd47 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-480757258235 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-62337e6f0e9d patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-45174c8df35d patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-7eee479dc13a patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-9a8c26eb205a patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-4ad78ab247ed patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-47dd5a3794bc patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-34af69e9accf patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-c09f9ff8be21 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-67f620ef10cb patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-587e5af3ed48 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-659fa12bc32e patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-7c31f9147faf patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-793c70b5ce63 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-58a809a540f2 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-40bcfd56a4a4 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-b84fa42f9699 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-6cd0e0033c13 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-c6efd2f46708 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-9aa59aa7fe3f patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-8a86815ffc6e patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-c31c64a67b22 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-a5d57baea12b patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-9e32682fa603 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-8c7edf74fe04 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-f815e4f8cb0a patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-c9ee6641e816 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-f07a214f4776 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-c95d64bfd24b patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-da644ad622ad patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-acd5f3d2d61b patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-a8d0235275f3 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-d2ce934f153d patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-d204ee21ac90 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-bccb33567685 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-ef96bb14bee4 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-fd017999de4a patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-d4ce1e676562 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-ec7464c7156e patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-e495aee34002 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-d82191248be6 patched (no change)
+sandboxwarmpool.extensions.agents.x-k8s.io/pool-r2e-img-e679029c6da3 patched (no change)
+[EXEC] kubectl delete sandboxes,sandboxclaims,sandboxtemplates,sandboxwarmpools,pods --all -n default --grace-period=0 --force 2>/dev/null || true
+sandbox.agents.x-k8s.io "pool-r2e-img-01def05241b5-w8r2p" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-174418623895-qr4bf" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-1ed8cb091cf1-97vr4" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-1fcff7b111bb-6599c" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-221bd037c5a6-tfr4g" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-2ef11ecfc078-vjw24" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-34af69e9accf-fw6n5" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-40bcfd56a4a4-v7c4f" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-45174c8df35d-wwx9p" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-47dd5a3794bc-mq2r4" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-480757258235-xgrk9" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-4ad78ab247ed-hvw6q" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-4c0d8a3a9b00-fpq9j" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-587e5af3ed48-fv677" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-58a809a540f2-fwc86" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-611e6b3abd47-qcwd6" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-62337e6f0e9d-2l76x" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-659fa12bc32e-njtrz" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-67f620ef10cb-spssf" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-6cd0e0033c13-qfxmw" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-793c70b5ce63-vrd75" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-7c31f9147faf-4jbr2" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-7eee479dc13a-449lm" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-8a86815ffc6e-zxzjn" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-8c7edf74fe04-n87hz" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-9a8c26eb205a-dn6x2" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-9aa59aa7fe3f-nht27" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-9e32682fa603-lnlwb" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-a5d57baea12b-4xgs8" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-a8d0235275f3-267cf" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-acd5f3d2d61b-qrf29" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-b84fa42f9699-zqwtg" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-bccb33567685-m7j86" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-c09f9ff8be21-v57bw" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-c31c64a67b22-2vh4g" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-c6efd2f46708-q27bm" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-c95d64bfd24b-82s9b" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-c9ee6641e816-br7b7" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-d204ee21ac90-s45p5" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-d2ce934f153d-4qx5d" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-d4ce1e676562-lmgh4" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-d82191248be6-8rltl" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-da644ad622ad-ns2w8" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-e495aee34002-dmbjp" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-e679029c6da3-q8jpd" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-ec7464c7156e-9fswl" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-ef96bb14bee4-5vhgx" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-f07a214f4776-vqnxs" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-f815e4f8cb0a-r5nsz" force deleted from default namespace
+sandbox.agents.x-k8s.io "pool-r2e-img-fd017999de4a-lvkxk" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-01def05241b5" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-174418623895" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-1ed8cb091cf1" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-1fcff7b111bb" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-221bd037c5a6" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-2ef11ecfc078" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-34af69e9accf" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-40bcfd56a4a4" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-45174c8df35d" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-47dd5a3794bc" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-480757258235" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-4ad78ab247ed" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-4c0d8a3a9b00" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-587e5af3ed48" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-58a809a540f2" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-611e6b3abd47" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-62337e6f0e9d" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-659fa12bc32e" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-67f620ef10cb" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-6cd0e0033c13" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-793c70b5ce63" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-7c31f9147faf" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-7eee479dc13a" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-8a86815ffc6e" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-8c7edf74fe04" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-9a8c26eb205a" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-9aa59aa7fe3f" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-9e32682fa603" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-a5d57baea12b" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-a8d0235275f3" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-acd5f3d2d61b" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-b84fa42f9699" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-bccb33567685" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-c09f9ff8be21" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-c31c64a67b22" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-c6efd2f46708" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-c95d64bfd24b" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-c9ee6641e816" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-d204ee21ac90" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-d2ce934f153d" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-d4ce1e676562" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-d82191248be6" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-da644ad622ad" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-e495aee34002" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-e679029c6da3" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-ec7464c7156e" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-ef96bb14bee4" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-f07a214f4776" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-f815e4f8cb0a" force deleted from default namespace
+sandboxtemplate.extensions.agents.x-k8s.io "r2e-img-fd017999de4a" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-01def05241b5" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-174418623895" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-1ed8cb091cf1" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-1fcff7b111bb" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-221bd037c5a6" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-2ef11ecfc078" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-34af69e9accf" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-40bcfd56a4a4" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-45174c8df35d" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-47dd5a3794bc" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-480757258235" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-4ad78ab247ed" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-4c0d8a3a9b00" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-587e5af3ed48" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-58a809a540f2" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-611e6b3abd47" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-62337e6f0e9d" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-659fa12bc32e" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-67f620ef10cb" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-6cd0e0033c13" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-793c70b5ce63" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-7c31f9147faf" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-7eee479dc13a" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-8a86815ffc6e" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-8c7edf74fe04" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-9a8c26eb205a" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-9aa59aa7fe3f" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-9e32682fa603" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-a5d57baea12b" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-a8d0235275f3" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-acd5f3d2d61b" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-b84fa42f9699" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-bccb33567685" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-c09f9ff8be21" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-c31c64a67b22" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-c6efd2f46708" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-c95d64bfd24b" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-c9ee6641e816" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-d204ee21ac90" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-d2ce934f153d" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-d4ce1e676562" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-d82191248be6" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-da644ad622ad" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-e495aee34002" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-e679029c6da3" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-ec7464c7156e" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-ef96bb14bee4" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-f07a214f4776" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-f815e4f8cb0a" force deleted from default namespace
+sandboxwarmpool.extensions.agents.x-k8s.io "pool-r2e-img-fd017999de4a" force deleted from default namespace
+pod "pool-r2e-img-01def05241b5-jtfsr" force deleted from default namespace
+pod "pool-r2e-img-62337e6f0e9d-jgkgw" force deleted from default namespace
+pod "pool-r2e-img-7c31f9147faf-mtbhn" force deleted from default namespace
+pod "pool-r2e-img-7eee479dc13a-fq8f7" force deleted from default namespace
+pod "pool-r2e-img-d204ee21ac90-n2mn7" force deleted from default namespace
+[CLEANUP] Namespace 'default' is 100% clean.
+
+
+====================================================================================================
+=== [STEP 1] EXECUTING TEST CASE 19: COLD START 3,000 TASKS (6 CLs + SBD + CoW) ===
+====================================================================================================
+
+sweep: 1 variant(s) = ['pipelined']
+[pipelined] 500 images x 6 = 3000 tasks; conc=500 cpu=125m mem=1Gi cow=True
+WARNING:root:APIServer rate limit (429) for SandboxClaim 'sandbox-claim-cf0700aa'. Retrying in 17.38s (attempt 1/8)...
+WARNING:root:APIServer rate limit (429) for SandboxClaim 'sandbox-claim-860d1397'. Retrying in 17.37s (attempt 1/8)...
+WARNING:root:APIServer rate limit (429) for SandboxClaim 'sandbox-claim-4c3f0905'. Retrying in 17.37s (attempt 1/8)...
+WARNING:root:APIServer rate limit (429) for SandboxClaim 'sandbox-claim-2ebeefc9'. Retrying in 17.49s (attempt 1/8)...
+WARNING:root:APIServer rate limit (429) for SandboxClaim 'sandbox-claim-a80cf86d'. Retrying in 15.38s (attempt 1/8)...
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<HTTPSConnection(host='34.57.182.63', port=443) at 0x7f864c63aad0>, 'Connection to 34.57.182.63 timed out. (connect timeout=None)')': /apis/agents.x-k8s.io/v1beta1/namespaces/default/sandboxes/pool-r2e-img-9ec6c19570ac-rf955
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectTimeoutError(<HTTPSConnection(host='34.57.182.63', port=443) at 0x7f864c1aa490>, 'Connection to 34.57.182.63 timed out. (connect timeout=None)')': /apis/agents.x-k8s.io/v1beta1/namespaces/default/sandboxes/sandbox-claim-b2803422
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.pytest-dev__pytest-10081-r0 failed: 'NoneType' object has no attribute 'decode'
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.scikit-learn__scikit-lear-r2 failed: 'NoneType' object has no attribute 'decode'
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /apis/extensions.agents.x-k8s.io/v1beta1/namespaces/default/sandboxtemplates/r2e-img-45ba984c9c83
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.sympy__sympy-15345-r2 failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+RESULT [pipelined] wall_s=995.1 s_per_task=0.3317 claims=2999 ok=2997 err=3
+-> /usr/local/google/home/chenyiwang/chw120/agent-sandbox/examples/agent-sandbox-rl/performance_reports/test19_cold3000_scale_results.json
+
+[OK] Test Case 19 (Cold Start) completed in 995.3s!
+
+====================================================================================================
+=== [INTER-TEST] Resetting namespace while preserving Node & containerd Warm PageCache ===
+====================================================================================================
+
+
+=== [CLEANUP] Purging all resources in namespace 'default' ===
+[EXEC] kubectl get sandboxes.agents.x-k8s.io,sandboxclaims.extensions.agents.x-k8s.io,sandboxtemplates.extensions.agents.x-k8s.io,sandboxwarmpools.extensions.agents.x-k8s.io -n default -o name 2>/dev/null | xargs -r -P 50 -I {} kubectl patch {} -n default -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null || true
+[EXEC] kubectl delete sandboxes,sandboxclaims,sandboxtemplates,sandboxwarmpools,pods --all -n default --grace-period=0 --force 2>/dev/null || true
+pod "pool-r2e-img-0d7db96910a0-n46hx" force deleted from default namespace
+pod "pool-r2e-img-20b956fef13c-l5mzd" force deleted from default namespace
+pod "pool-r2e-img-24c196f8ade5-h8lmw" force deleted from default namespace
+pod "pool-r2e-img-58434c5aff4f-lq8z7" force deleted from default namespace
+pod "pool-r2e-img-705660cc2086-tkjmq" force deleted from default namespace
+pod "pool-r2e-img-b1bc472835ed-vqx59" force deleted from default namespace
+pod "pool-r2e-img-b98b1a7f1c78-lhk88" force deleted from default namespace
+pod "pool-r2e-img-bcfa7605c138-9nfp4" force deleted from default namespace
+pod "pool-r2e-img-ce759bf6df35-56ddx" force deleted from default namespace
+pod "pool-r2e-img-e5e708969228-l4wjd" force deleted from default namespace
+pod "pool-r2e-img-e6fec13dace6-hn5qg" force deleted from default namespace
+pod "sandbox-claim-0489c44b" force deleted from default namespace
+[CLEANUP] Namespace 'default' is 100% clean.
+
+
+====================================================================================================
+=== [STEP 2] EXECUTING TEST CASE 20: WARM CACHE 3,000 TASKS (6 CLs + SBD + CoW) ===
+====================================================================================================
+
+sweep: 1 variant(s) = ['pipelined']
+[pipelined] 500 images x 6 = 3000 tasks; conc=500 cpu=125m mem=1Gi cow=True
+WARNING:agent_sandbox_rl.resources:K8s APIServer rate-limited (HTTP 429 Too Many Requests). Retrying in 14.24s (attempt 1/10)...
+WARNING:urllib3.connectionpool:Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'RemoteDisconnected('Remote end closed connection without response')': /apis/extensions.agents.x-k8s.io/v1beta1/namespaces/default/sandboxtemplates/r2e-img-0e37a39d89fa
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15563-r5 failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+ERROR:agent_sandbox_rl.async_fleet:task swebench-verified-sweb.eval.x86_64.django__django-15503-r5 failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))

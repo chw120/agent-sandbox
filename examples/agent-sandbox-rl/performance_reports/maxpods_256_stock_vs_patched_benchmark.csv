@@ -1,0 +1,10 @@
+Category,Metric / Parameter,Track 1: 4-CLs Patched GKE (Image Streaming),Track 2: Unpatched Stock GKE (Image Streaming),Track 3: Unpatched Stock GKE (Standard Full Pull / No Streaming)
+Configuration,Max Sustained Concurrent Pods per Node,256 pods,256 pods,256 pods
+Configuration,GCFSD Daemon Mode,Patched 4 CLs,Official Stock Unpatched,Standard Pull (Disabled gcfsd)
+Economics & Throughput,Cost per Successful Evaluation ($/task),$0.00001,$0.00001,$0.00001
+Economics & Throughput,Effective Throughput (tasks / min),1934.5 / min,3096.8 / min,2903.6 / min
+Hardware Saturation,Host Memory Peak Utilization (%),18.2%,24.5%,26.8%
+Hardware Saturation,CPU CFS Throttling Ratio (%),23.4%,58.7%,64.2%
+Hardware Saturation,Primary Disk Usage (/dev/sda1),14 GB / 292 GB (5%),18 GB / 292 GB (6%),68 GB / 292 GB (23% - Heavy Full Extraction)
+Execution Results,End-to-End Wall Time (TOTAL),7.94s,4.96s,5.29s
+Phase Breakdown,process (SWE-bench Probe Workload),0.79s,1.62s,1.55s

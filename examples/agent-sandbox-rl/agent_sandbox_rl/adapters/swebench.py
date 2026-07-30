@@ -72,20 +72,30 @@ class SweBenchSource:
       raise ImportError(
           "SweBenchSource requires the 'swebench' extra: "
           "pip install 'agent-sandbox-rl[swebench]'") from e
-    # Use HF split slicing so a small limit/offset doesn't materialize the whole
-    # split. `limit=None` (default) = all; `limit=0` = none (handled above).
-    split = self.split
-    if self.offset or self.limit is not None:
-      end = self.offset + self.limit if self.limit is not None else ""
-      split = f"{self.split}[{self.offset}:{end}]"
-    logger.info("Loading %s [%s]", self.dataset, split)
-    rows = list(load_dataset(self.dataset, split=split))
+    logger.info("Loading %s [%s]", self.dataset, self.split)
+    rows = list(load_dataset(self.dataset, split=self.split))
+    if self.offset:
+      rows = rows[self.offset:]
+    base_rows = list(rows)
+    if self.limit is not None and self.limit > len(base_rows) and len(base_rows) > 0:
+      repeated_rows = []
+      cycle = 0
+      while len(repeated_rows) < self.limit:
+        for r in base_rows:
+          if len(repeated_rows) >= self.limit:
+            break
+          r_copy = dict(r)
+          orig_id = str(r_copy.get(self.id_field, len(repeated_rows)))
+          r_copy[self.id_field] = f"{orig_id}--run{cycle}"
+          repeated_rows.append(r_copy)
+        cycle += 1
+      rows = repeated_rows
+    elif self.limit is not None:
+      rows = rows[:self.limit]
     tasks = []
     for i, r in enumerate(rows):
       meta = {"repo": r.get("repo", ""), "base_commit": r.get("base_commit", "")}
       if self.keep_row:
-        # Deep copy: an owned snapshot so per-task R2E-Gym/reward state never
-        # leaks across tasks via shared nested objects in the dataset row.
         meta["ds"] = copy.deepcopy(dict(r))
       tasks.append(Task(id=str(r.get(self.id_field, i)),
                         image=r[self.image_field], metadata=meta))

@@ -14,9 +14,11 @@
 
 import asyncio
 import logging
+import random
 import time
 
 from kubernetes_asyncio import client, config, watch
+from kubernetes_asyncio.client.exceptions import ApiException
 
 logger = logging.getLogger(__name__)
 
@@ -111,13 +113,26 @@ class AsyncK8sHelper:
         logger.info(
             f"Creating SandboxClaim '{name}' in namespace '{namespace}' using warm pool '{warmpool}'..."
         )
-        return await self.custom_objects_api.create_namespaced_custom_object(
-            group=CLAIM_API_GROUP,
-            version=CLAIM_API_VERSION,
-            namespace=namespace,
-            plural=CLAIM_PLURAL_NAME,
-            body=manifest,
-        )
+        max_retries = 8
+        for attempt in range(max_retries):
+            try:
+                return await self.custom_objects_api.create_namespaced_custom_object(
+                    group=CLAIM_API_GROUP,
+                    version=CLAIM_API_VERSION,
+                    namespace=namespace,
+                    plural=CLAIM_PLURAL_NAME,
+                    body=manifest,
+                )
+            except ApiException as e:
+                if e.status == 429 and attempt < max_retries - 1:
+                    retry_after = float(e.headers.get("Retry-After", "1")) if e.headers else 1.0
+                    delay = max(retry_after, 0.5) + random.uniform(0.1, 0.5) * (attempt + 1)
+                    logger.warning(
+                        f"APIServer rate limit (429) for SandboxClaim '{name}'. Retrying in {delay:.2f}s (attempt {attempt+1}/{max_retries})..."
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise
 
     async def resolve_sandbox_name(self, claim_name: str, namespace: str, timeout: int, resource_version: str | None = None) -> str:
         """Resolves the actual Sandbox name from the SandboxClaim status.

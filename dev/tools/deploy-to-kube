@@ -276,6 +276,6 @@ if __name__ == "__main__":
                         "usage: --controller-args \"--enable-pprof-debug --zap-log-level=debug\". " \
                         "Do not use this flag to enable extensions, use --extensions instead.",
                         type=str,
-                        default="")
+                        default=os.getenv("CONTROLLER_ARGS", ""))
     args = parser.parse_args()
     main(args)

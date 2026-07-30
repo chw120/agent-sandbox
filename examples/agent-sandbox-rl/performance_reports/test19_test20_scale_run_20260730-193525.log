@@ -1,0 +1,24 @@
+=== [PRE-FLIGHT] Verifying Cluster Context & Node Health ===
+[EXEC] kubectl config current-context
+  -> Current Context: kind-kind
+  -> Switching context to: gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster
+[EXEC] kubectl config use-context gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster
+Switched to context "gke_chenyiwang-gke-dev_us-central1-c_agent-sandbox-scale-cluster".
+[EXEC] kubectl get nodes -l cloud.google.com/gke-nodepool=gvisor-scale-pool-32 --no-headers 2>/dev/null || echo ''
+  -> Nodes found in pool (cloud.google.com/gke-nodepool=gvisor-scale-pool-32): 10 nodes
+[EXEC] kubectl get deployment agent-sandbox-controller -n agent-sandbox-system --no-headers 2>/dev/null || echo ''
+  -> Controller Status: agent-sandbox-controller   1/1   1     1     2d17h
+
+=== [CLEANUP] Purging all resources in namespace 'default' ===
+[EXEC] kubectl get sandboxes.agents.x-k8s.io,sandboxclaims.extensions.agents.x-k8s.io,sandboxtemplates.extensions.agents.x-k8s.io,sandboxwarmpools.extensions.agents.x-k8s.io -n default -o name 2>/dev/null | xargs -r -P 50 -I {} kubectl patch {} -n default -p '{"metadata":{"finalizers":null}}' --type=merge 2>/dev/null || true
+[EXEC] kubectl delete sandboxes,sandboxclaims,sandboxtemplates,sandboxwarmpools,pods --all -n default --grace-period=0 --force 2>/dev/null || true
+pod "test-m6zq" force deleted from default namespace
+[CLEANUP] Namespace 'default' is 100% clean.
+
+
+====================================================================================================
+=== [STEP 1] EXECUTING TEST CASE 19: COLD START 3,000 TASKS (6 CLs + SBD + CoW) ===
+====================================================================================================
+
+sweep: 1 variant(s) = ['pipelined']
+[pipelined] 500 images x 6 = 3000 tasks; conc=500 cpu=125m mem=1Gi cow=True

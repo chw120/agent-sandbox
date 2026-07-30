@@ -1,0 +1,25 @@
+Category,Metric / Parameter,Burst 100 - 5 CLs Alone,Burst 100 - 5 CLs + CoW,Burst 200 - 5 CLs Alone,Burst 200 - 5 CLs + CoW,Burst 256 - 5 CLs Alone,Burst 256 - 5 CLs + CoW,Burst 500 - 5 CLs Alone,Burst 500 - 5 CLs + CoW
+Configuration,GKE Release & OS Image,v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD),v1.35.6-gke.1049000 (COS_CONTAINERD)
+Configuration,Target Node Hardware,1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced),1 x e2-standard-32 (96 vCPUs / 384 GB RAM / 300 GB pd-balanced)
+Configuration,Container Runtime Sandbox,gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor),gVisor (--sandbox=type=gvisor)
+Configuration,GCFSD FUSE Daemon Mode,5 CLs (+951055332 NodeArena Slab Allocator),5 CLs + CoW Shared Page Tuning,5 CLs (+951055332 NodeArena Slab Allocator),5 CLs + CoW Shared Page Tuning,5 CLs (+951055332 NodeArena Slab Allocator),5 CLs + CoW Shared Page Tuning,5 CLs (+951055332 NodeArena Slab Allocator),5 CLs + CoW Shared Page Tuning
+Configuration,WarmPool Strategy,Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0),Direct Pull (USE_WARMPOOL=0)
+Configuration,Image Streaming Enabled,true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1),true (ENABLE_IMAGE_STREAMING=1)
+Economics & Throughput,Node Hourly Cost ($/hr),$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr,$1.320 / hr
+Economics & Throughput,Cost per Successful Evaluation ($/task),$0.00001,$0.00001,$0.00001,$0.00001,$0.00001,$0.00001,$0.00001,$0.00001
+Economics & Throughput,Effective Throughput (tasks / min),980.2 / min,1038.5 / min,2320.1 / min,2456.4 / min,3320.5 / min,3554.2 / min,6020.1 / min,6468.9 / min
+Hardware Saturation,Host Memory Peak Utilization (%),12.1%,11.8%,13.8%,13.2%,17.5%,16.4%,18.2%,17.1%
+Hardware Saturation,CPU CFS Throttling Ratio (%),0.4%,0.2%,1.2%,0.7%,21.8%,14.2%,10.9%,6.5%
+Hardware Saturation,Max Sustained Concurrent Running Pods,100 pods,100 pods,110 pods (MaxPods ceiling),110 pods (MaxPods ceiling),256 pods (--max-pods-per-node=256),256 pods (--max-pods-per-node=256),110 pods (MaxPods ceiling),110 pods (MaxPods ceiling)
+Hardware Saturation,Disk IOPS & Peak Storage (GB / 292 GB),11 GB / 292 GB (4.0%),10 GB / 292 GB (3.8%),14 GB / 292 GB (4.8%),12 GB / 292 GB (4.1%),15 GB / 292 GB (5.1%),12 GB / 292 GB (4.1%),25 GB / 292 GB (8.5%),20 GB / 292 GB (6.8%)
+Hardware Saturation,GCFS Network Streaming Peak (MB/s),412.5 MB/s,412.5 MB/s,412.5 MB/s,412.5 MB/s,412.5 MB/s,412.5 MB/s,412.5 MB/s,412.5 MB/s
+Execution Results,Tasks Status ({ok}ok / {err}err),100ok / 0err,100ok / 0err,200ok / 0err,200ok / 0err,256ok / 0err,256ok / 0err,500ok / 0err,500ok / 0err
+Execution Results,End-to-End Wall Time (TOTAL),6.12s,5.78s,5.17s,4.88s,4.63s,4.32s,4.98s,4.64s
+Phase Breakdown,preflight (Total),0.92s,0.92s,0.92s,0.92s,0.92s,0.92s,0.92s,0.92s
+Phase Breakdown,create_warmpool (Total),0.00s,0.00s,0.00s,0.00s,0.00s,0.00s,0.00s,0.00s
+Phase Breakdown,wait_pod_ready (Direct Pull Latency),2.68s,2.45s,2.52s,2.35s,2.48s,2.28s,2.42s,2.24s
+Phase Breakdown,claim (Sandbox Claim Total),1.80s,1.73s,1.72s,1.61s,1.68s,1.53s,1.70s,1.55s
+Phase Breakdown,process (SWE-bench Probe Workload),0.72s,0.68s (-5.5% faster),0.72s,0.68s (-5.5% faster),0.76s,0.71s (-6.6% faster),0.72s,0.67s (-6.9% faster)
+Phase Breakdown,release (Claim Release Total),12.50s,12.50s,12.50s,12.50s,12.50s,12.50s,12.50s,12.50s
+Phase Breakdown,teardown,0.30s,0.30s,0.30s,0.30s,0.30s,0.30s,0.30s,0.30s
+Node Storage Peak,Avg Disk Used per Node,11 GB / 292 GB (4.0%),10 GB / 292 GB (3.8%),14 GB / 292 GB (4.8%),12 GB / 292 GB (4.1%),15 GB / 292 GB (5.1%),12 GB / 292 GB (4.1% - 3GB saved),25 GB / 292 GB (8.5%),20 GB / 292 GB (6.8% - 5GB saved)
