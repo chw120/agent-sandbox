@@ -3,7 +3,7 @@
 > **Document Status**: Production Verified & Fully Reproducible  
 > **Target Scale**: 500 Concurrent Agent Sandboxes across 10 Physical GKE Nodes (**`10 x 96 vCPUs = 960 vCPUs / 3.84 TB RAM`**)  
 > **Workload Target**: 3,000 SWE-bench Verified Benchmark Tasks (6 Sequential Cycles across 500 Verified Images)  
-> **Key Architectural Pillars**: 6 Riptide/GCFS FUSE Driver CLs + 8 GB Secondary Boot Disk (SBD) + CoW RAM Redirection + Controller Concurrency Tuning (`1000 workers`)
+> **Key Architectural Pillars**: 6 Riptide/GCFS FUSE Driver CLs + 8 GB Secondary Boot Disk (SBD) + CoW RAM Redirection + Controller Concurrency Tuning (`sandbox=1000, claim=1000, warmpool=100, template=100, batch=500`)
 
 ---
 
@@ -328,6 +328,8 @@ At 500 concurrent tasks distributed across 10 nodes (average 50 active pods per 
 ### 3.1 CoW Architecture & OverlayFS Copy-Up Suppression
 In this massive-scale evaluation, each pod is sized with **`vCPU = min 125m`** (`cpu: "125m"`) and **`Mem = 1GB`** (`memory: "1Gi"`). To eliminate OverlayFS copy-up disk storms (`ovl_copy_up`), we explicitly inject `PYTHONDONTWRITEBYTECODE=1`, `TMPDIR=/tmp`, and mount an in-memory `emptyDir (medium: Memory)` volume.
 
+> 💡 **Automated Flag in Driver**: Our evaluation runner (`run_basic_swebench_3000.py` / `bench_core.py` and `guard_async.sh` with `ENABLE_COW=1`) already provides the built-in **`--enable-cow`** flag. When enabled, it automatically injects this entire CoW RAM redirection volume and environment specification into the `TemplateSpec` pod manifest on the fly—requiring zero manual YAML modification!
+
 ### 3.2 Applying TemplateSpec Resource Sizing & RAM Redirection
 
 **A. How to Reproduce via Standard Kubernetes Manifest (`swebench_500conc_pod.yaml`):**
@@ -408,14 +410,14 @@ scale_template_spec = TemplateSpec(
 
 ## Chapter 4: Controller Concurrency Tuning & 500-Task Scale Fleet Evaluation
 
-### 4.1 Controller Concurrency Reconciler Tuning (`--sandbox-concurrent-workers=1000`)
+### 4.1 Controller Concurrency Reconciler Tuning (`sandbox=1000, claim=1000, warmpool=100, template=100, batch=500`)
 When launching 500 concurrent sandboxes across the 10-node pool, the standard Kubernetes controller manager (`agent-sandbox-controller`) will bottleneck if its internal workqueues default to single-digit concurrency.
 
 To deploy or upgrade the controller manager with high-concurrency reconciler tuning, deploy directly using `deploy-to-kube` with `CONTROLLER_ARGS`:
 
 ```bash
-# Deploy the controller and extension CRDs with 1,000 sandbox/claim and 10 warmpool/template worker concurrency
-CONTROLLER_ARGS="--sandbox-concurrent-workers=1000 --sandbox-claim-concurrent-workers=1000 --sandbox-warm-pool-concurrent-workers=100 --sandbox-template-concurrent-workers=100" \
+# Deploy the controller and extension CRDs with 1,000 sandbox/claim workers, 100 warmpool/template workers, and 500 batch size
+CONTROLLER_ARGS="--sandbox-concurrent-workers=1000 --sandbox-claim-concurrent-workers=1000 --sandbox-warm-pool-concurrent-workers=100 --sandbox-template-concurrent-workers=100 --sandbox-warm-pool-max-batch-size=500" \
   ./dev/tools/deploy-to-kube --image-prefix=gcr.io/chenyiwang-gke-dev/ --image-tag=latest --extensions
 
 # Wait for controller rollout completion
@@ -424,29 +426,53 @@ kubectl rollout status deployment/agent-sandbox-controller -n agent-sandbox-syst
 
 Setting `--sandbox-concurrent-workers=1000` and `--sandbox-claim-concurrent-workers=1000` guarantees that up to 1,000 `Sandbox` / `SandboxClaim` adoption and binding routines execute simultaneously across Go worker goroutines without queue latency!
 
-### 4.2 Executing the 500-Concurrency Evaluation Fleet Runner
-When evaluating 3,000 SWE-bench tasks (6 cycles of 500 Verified images) at 500 concurrent task parallelism (`MAX_CONCURRENT=500`, `WARMPOOL_WINDOW_SIZE=500`, `MAX_WARMPOOL_SIZE=1`, `pipelined+warmed+prepull`) across 10 nodes, launch the 500-concurrency evaluation runner:
+### 4.2 Executing the 500-Concurrency Evaluation Fleet Runner (`run_basic_swebench_3000.py`)
+When evaluating 3,000 SWE-bench tasks (6 cycles of 500 Verified images) at 500 concurrent task parallelism (`MAX_CONCURRENT=500`, `WARMPOOL_WINDOW_SIZE=500`, `MAX_WARMPOOL_SIZE=1`, `pipelined+warmed+prepull`) across 10 nodes, launch the canonical 500-concurrency evaluation runner (`run_basic_swebench_3000.py`):
 
+#### Method A: Guarded Execution with Live Watchdog (`guard_async.sh` — Recommended)
 ```bash
-# Export the 10-node / 500-concurrency scale execution environment variables
-export WARMPOOL_STRATEGY="pipelined"
-export PREPULL="0"  # Disabled for 6-CL Riptide Image Streaming + SBD on-demand FUSE mounting
-export RUNTIME_CLASS="gvisor"
-export TASKS_LIMIT=3000
-export MAX_CONCURRENT=500
-export WARMPOOL_WINDOW_SIZE=500
-export MAX_WARMPOOL_SIZE=1
-export NAMESPACE="default"
-export NODE_SELECTOR_KEY="cloud.google.com/gke-nodepool"
-export NODE_SELECTOR_VAL="gvisor-scale-pool-32"
+# 1. Export execution parameters for the 3,000-task / 500-concurrency evaluation
+export CTX="gke_$(gcloud config get-value project)_us-central1-c_rl-chenyi-test"
+export NS="default"
+export POOL="gvisor-scale-pool-32"
+export ASRL_PKG="$(pwd)/examples/agent-sandbox-rl"
+export PYTHON="$(pwd)/bin/python-venv-agent-sandbox-rl/bin/python3"
+export IMAGES="$(pwd)/examples/agent-sandbox-rl/swebench500_digests.txt"
+export STRATEGIES="naive"  # Or "pipelined" / "sliding"
+export ENABLE_COW="1"      # Injects RAM redirection & PYTHONDONTWRITEBYTECODE
+export CONC=500            # MAX_CONCURRENT=500
+export PROBLEMS=500        # WARMPOOL_WINDOW_SIZE=500
+export ROLLOUTS=6          # 500 images x 6 = 3000 tasks
+export THRESHOLD=2200      # Circuit-breaker watchdog on 2560-capacity pool
 
-# Execute the automated fleet evaluation runner and generate the output CSV report
-PYTHONPATH=examples/agent-sandbox-rl bin/python-venv-agent-sandbox-rl/bin/python3 examples/agent-sandbox-rl/examples/run_swebench_fleet.py \
-  --output-csv=performance_reports/10nodes_500concurrency_comprehensive_report.csv \
-  --output-md=performance_reports/10nodes_500concurrency_comprehensive_report.md
+# 2. Launch the guarded asynchronous sweep
+bash drivers/guard_async.sh
 ```
 
-### 4.3 Automated Report Generation & Master CSV Parameter Mapping
+#### Method B: Direct Python Invocation (`run_basic_swebench_3000.py`)
+```bash
+# Directly invoke the canonical 3,000-task benchmark driver with --enable-cow:
+PYTHONPATH="examples/agent-sandbox-rl:drivers" \
+  bin/python-venv-agent-sandbox-rl/bin/python3 drivers/run_basic_swebench_3000.py \
+  --context "$CTX" \
+  --namespace "$NS" \
+  --node-selector "cloud.google.com/gke-nodepool=$POOL" \
+  --images-file "examples/agent-sandbox-rl/swebench500_digests.txt" \
+  --problems 500 \
+  --rollouts 6 \
+  --concurrency 500 \
+  --claim-concurrency 500 \
+  --cpu 125m \
+  --memory 1Gi \
+  --runtime-class gvisor \
+  --testbed /testbed \
+  --probe "true" \
+  --strategies "naive" \
+  --enable-cow \
+  --out "drivers/results/bench_3000.json"
+```
+
+### 4.3 Automated Report Generation & 28-Parameter Master CSV Schema (29 Rows)
 During execution, the test harness automatically populates all 28 standardized rows of `all_tests_comprehensive_comparison.csv` and outputs a full publication-ready CSV and Markdown report:
 
 #### A. Cluster & Fleet Specifications (Rows 1 to 13)
